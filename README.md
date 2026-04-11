@@ -112,6 +112,13 @@ Struk kedai dicetak mempergunakan *Web Bluetooth API*.
 
 ---
 
+## 🌐 Related Projects
+
+- ⚙️ Backend API: github.com/sukunenv/picpic-cafe
+- 📱 Customer App: github.com/sukunenv/picpic-cafe-web
+
+---
+
 ## 👨‍💻 Developer
 
 Built with 🔥 by **Kalify.dev**
