@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -40,14 +40,16 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
-import { menuItems as initialMenuItems, formatCurrency } from '@/lib/data'
+import { formatCurrency } from '@/lib/data'
 import type { MenuItem } from '@/lib/data'
+import api from '@/lib/api'
 
 const categories = ['Kopi', 'Non-Kopi', 'Makanan', 'Snack']
 const ITEMS_PER_PAGE = 10
 
 export function MenuContent() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(initialMenuItems)
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
@@ -60,29 +62,39 @@ export function MenuContent() {
   const [formCategory, setFormCategory] = useState('')
   const [formImage, setFormImage] = useState('')
 
-  const filteredItems = menuItems.filter(
-    (item) =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  useEffect(() => {
+    fetchMenus()
+  }, [])
 
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE))
-  const paginatedItems = filteredItems.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  )
-
-  const handleToggleStatus = (id: string) => {
-    setMenuItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, status: !item.status } : item
-      )
-    )
+  const fetchMenus = async () => {
+    try {
+      setIsLoading(true)
+      const response = await api.get('/menus')
+      setMenuItems(response.data)
+    } catch (err) {
+      console.error('Fetch menus error:', err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleDelete = (id: string) => {
+  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+    try {
+      await api.put(`/menus/${id}`, { status: !currentStatus })
+      fetchMenus()
+    } catch (err) {
+      console.error('Toggle status error:', err)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus menu ini?')) {
-      setMenuItems((prev) => prev.filter((item) => item.id !== id))
+      try {
+        await api.delete(`/menus/${id}`)
+        fetchMenus()
+      } catch (err) {
+        console.error('Delete menu error:', err)
+      }
     }
   }
 
@@ -106,45 +118,53 @@ export function MenuContent() {
     setIsDialogOpen(true)
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formName || !formPrice || !formCategory) {
       alert('Lengkapi semua field yang diperlukan')
       return
     }
 
-    if (editingItem) {
-      // Update existing
-      setMenuItems((prev) =>
-        prev.map((item) =>
-          item.id === editingItem.id
-            ? {
-                ...item,
-                name: formName,
-                description: formDescription,
-                price: parseInt(formPrice),
-                category: formCategory,
-                image: formImage || item.image,
-              }
-            : item
-        )
-      )
-    } else {
-      // Add new
-      const newItem: MenuItem = {
-        id: Date.now().toString(),
-        name: formName,
-        description: formDescription,
-        price: parseInt(formPrice),
-        category: formCategory,
-        image:
-          formImage ||
-          'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=200&h=200&fit=crop',
-        status: true,
-      }
-      setMenuItems((prev) => [...prev, newItem])
+    const payload = {
+      name: formName,
+      description: formDescription,
+      price: parseInt(formPrice),
+      category: formCategory,
+      image: formImage || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=200&h=200&fit=crop',
+      status: editingItem ? editingItem.status : true,
     }
 
-    setIsDialogOpen(false)
+    try {
+      if (editingItem) {
+        await api.put(`/menus/${editingItem.id}`, payload)
+      } else {
+        await api.post('/menus', payload)
+      }
+      fetchMenus()
+      setIsDialogOpen(false)
+    } catch (err) {
+      console.error('Submit menu error:', err)
+      alert('Terjadi kesalahan saat menyimpan menu')
+    }
+  }
+
+  const filteredItems = menuItems.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE))
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
   }
 
   return (
@@ -297,12 +317,12 @@ export function MenuContent() {
                     <Badge variant="outline">{item.category}</Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {formatCurrency(item.price)}
+                    {formatCurrency(Number(item.price))}
                   </TableCell>
                   <TableCell className="text-center">
                     <Switch
                       checked={item.status}
-                      onCheckedChange={() => handleToggleStatus(item.id)}
+                      onCheckedChange={() => handleToggleStatus(item.id, item.status)}
                     />
                   </TableCell>
                   <TableCell className="text-right">

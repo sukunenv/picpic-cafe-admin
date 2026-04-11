@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -18,7 +18,11 @@ const categories = ['Semua', 'Kopi', 'Non-Kopi', 'Makanan', 'Snack']
 type PaymentMethod = 'cash' | 'qris' | null
 type CheckoutStep = 'cart' | 'payment' | 'success'
 
+import api from '@/lib/api'
+
 export function KasirContent() {
+  const [menus, setMenus] = useState<MenuItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [cart, setCart] = useState<CartItem[]>([])
   const [customerName, setCustomerName] = useState('')
   const [tableNumber, setTableNumber] = useState('')
@@ -27,12 +31,34 @@ export function KasirContent() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(null)
   const [cashReceived, setCashReceived] = useState('')
 
+  useEffect(() => {
+    const fetchMenus = async () => {
+      try {
+        const response = await api.get('/menus')
+        setMenus(response.data)
+      } catch (err) {
+        console.error('Fetch kasir menus error:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchMenus()
+  }, [])
+
   const filteredMenu =
     selectedCategory === 'Semua'
-      ? menuItems.filter((item) => item.status)
-      : menuItems.filter(
+      ? menus.filter((item) => item.status)
+      : menus.filter(
           (item) => item.category === selectedCategory && item.status
         )
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] flex-1 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
+  }
 
   const addToCart = (item: MenuItem) => {
     setCart((prev) => {

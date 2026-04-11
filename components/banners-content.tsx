@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,11 +16,19 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Image as ImageIcon, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react'
-import { banners as initialBanners } from '@/lib/data'
-import type { Banner } from '@/lib/data'
+import api from '@/lib/api'
+
+export interface Banner {
+  id: string
+  title: string
+  image: string
+  active: boolean
+  createdAt: Date
+}
 
 export function BannersContent() {
-  const [banners, setBanners] = useState<Banner[]>(initialBanners)
+  const [banners, setBanners] = useState<Banner[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null)
 
@@ -28,17 +36,39 @@ export function BannersContent() {
   const [formTitle, setFormTitle] = useState('')
   const [formImage, setFormImage] = useState('')
 
-  const handleToggleStatus = (id: string) => {
-    setBanners((prev) =>
-      prev.map((banner) =>
-        banner.id === id ? { ...banner, active: !banner.active } : banner
-      )
-    )
+  useEffect(() => {
+    fetchBanners()
+  }, [])
+
+  const fetchBanners = async () => {
+    try {
+      setIsLoading(true)
+      const response = await api.get('/banners')
+      setBanners(response.data)
+    } catch (err) {
+      console.error('Fetch banners error:', err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleDelete = (id: string) => {
+  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+    try {
+      await api.put(`/banners/${id}`, { active: !currentStatus })
+      fetchBanners()
+    } catch (err) {
+      console.error('Toggle banner error:', err)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus banner ini?')) {
-      setBanners((prev) => prev.filter((banner) => banner.id !== id))
+      try {
+        await api.delete(`/banners/${id}`)
+        fetchBanners()
+      } catch (err) {
+        console.error('Delete banner error:', err)
+      }
     }
   }
 
@@ -56,38 +86,38 @@ export function BannersContent() {
     setIsDialogOpen(true)
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formTitle || !formImage) {
       alert('Lengkapi semua field yang diperlukan')
       return
     }
 
-    if (editingBanner) {
-      // Update existing
-      setBanners((prev) =>
-        prev.map((banner) =>
-          banner.id === editingBanner.id
-            ? {
-                ...banner,
-                title: formTitle,
-                image: formImage,
-              }
-            : banner
-        )
-      )
-    } else {
-      // Add new
-      const newBanner: Banner = {
-        id: Date.now().toString(),
-        title: formTitle,
-        image: formImage,
-        active: true,
-        createdAt: new Date(),
-      }
-      setBanners((prev) => [...prev, newBanner])
+    const payload = {
+      title: formTitle,
+      image: formImage,
+      active: editingBanner ? editingBanner.active : true,
     }
 
-    setIsDialogOpen(false)
+    try {
+      if (editingBanner) {
+        await api.put(`/banners/${editingBanner.id}`, payload)
+      } else {
+        await api.post('/banners', payload)
+      }
+      fetchBanners()
+      setIsDialogOpen(false)
+    } catch (err) {
+      console.error('Submit banner error:', err)
+      alert('Terjadi kesalahan saat menyimpan banner')
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
   }
 
   const activeBanners = banners.filter((b) => b.active).length
@@ -239,7 +269,7 @@ export function BannersContent() {
                     <div className="flex items-center gap-3">
                       <Switch
                         checked={banner.active}
-                        onCheckedChange={() => handleToggleStatus(banner.id)}
+                        onCheckedChange={() => handleToggleStatus(banner.id, banner.active)}
                       />
                       <span className="text-sm text-muted-foreground">
                         {banner.active ? 'Aktif' : 'Tidak Aktif'}

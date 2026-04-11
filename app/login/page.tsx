@@ -1,17 +1,39 @@
 'use client'
 
 import Image from 'next/image'
-import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react'
+import api from '@/lib/api'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    // Clear token on mount to be safe
+    localStorage.removeItem('token')
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // authentication logic goes here
+    setIsLoading(true)
+    setError('')
+    
+    try {
+      const response = await api.post('/login', { email, password })
+      localStorage.setItem('token', response.data.token)
+      router.push('/')
+    } catch (err: any) {
+      console.error('Login error:', err)
+      setError(err.response?.data?.message || 'Email atau password salah.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -62,6 +84,12 @@ export default function LoginPage() {
               </p>
             </div>
           </div>
+
+          {error && (
+            <div className="mb-4 rounded-xl border border-red-500/50 bg-red-500/10 p-3 text-center text-xs text-red-400">
+               {error}
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -127,9 +155,10 @@ export default function LoginPage() {
             {/* Submit */}
             <button
               type="submit"
-              className="mt-2 w-full rounded-xl bg-amber-400 py-3 text-sm font-bold tracking-wide text-amber-950 shadow-md transition hover:bg-amber-300 active:scale-[0.98]"
+              disabled={isLoading}
+              className="mt-2 w-full rounded-xl bg-amber-400 py-3 text-sm font-bold tracking-wide text-amber-950 shadow-md transition hover:bg-amber-300 active:scale-[0.98] disabled:opacity-50"
             >
-              Masuk
+              {isLoading ? 'Masuk...' : 'Masuk'}
             </button>
           </form>
           {/* Footer note */}

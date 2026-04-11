@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -21,40 +22,13 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import {
-  orders,
   trendData,
   formatCurrency,
   formatTime,
   getStatusLabel,
 } from '@/lib/data'
 import type { Order } from '@/lib/data'
-
-const stats = [
-  {
-    title: 'Total Order',
-    value: '156',
-    icon: ShoppingBag,
-    color: 'bg-primary',
-  },
-  {
-    title: 'Pending',
-    value: '12',
-    icon: Clock,
-    color: 'bg-warning',
-  },
-  {
-    title: 'Pendapatan',
-    value: formatCurrency(12450000),
-    icon: DollarSign,
-    color: 'bg-success',
-  },
-  {
-    title: 'Belum Bayar',
-    value: '3',
-    icon: AlertCircle,
-    color: 'bg-destructive',
-  },
-]
+import api from '@/lib/api'
 
 const chartConfig = {
   orders: {
@@ -81,10 +55,68 @@ function getStatusBadgeVariant(status: Order['status']) {
 }
 
 export function DashboardContent() {
-  const completedOrders = orders.filter((o) => o.status === 'lunas').length
-  const pendingOrders = orders.filter((o) => o.status === 'pending').length
-  const completedPercent = Math.round((completedOrders / orders.length) * 100)
-  const pendingPercent = Math.round((pendingOrders / orders.length) * 100)
+  const [ordersData, setOrdersData] = useState<Order[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await api.get('/orders')
+        setOrdersData(response.data)
+      } catch (err) {
+        console.error('Fetch dashboard error:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  const totalOrders = ordersData.length
+  const pendingOrders = ordersData.filter((o) => o.status === 'pending').length
+  const unpaidOrders = ordersData.filter((o) => o.status === 'belum_bayar').length
+  const totalRevenue = ordersData
+    .filter((o) => o.status === 'lunas')
+    .reduce((sum, o) => sum + Number(o.total), 0)
+
+  const completedOrders = ordersData.filter((o) => o.status === 'lunas').length
+  const completedPercent = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0
+  const pendingPercent = totalOrders > 0 ? Math.round((pendingOrders / totalOrders) * 100) : 0
+
+  const dashboardStats = [
+    {
+      title: 'Total Order',
+      value: totalOrders.toString(),
+      icon: ShoppingBag,
+      color: 'bg-primary',
+    },
+    {
+      title: 'Pending',
+      value: pendingOrders.toString(),
+      icon: Clock,
+      color: 'bg-warning',
+    },
+    {
+      title: 'Pendapatan',
+      value: formatCurrency(totalRevenue),
+      icon: DollarSign,
+      color: 'bg-success',
+    },
+    {
+      title: 'Belum Bayar',
+      value: unpaidOrders.toString(),
+      icon: AlertCircle,
+      color: 'bg-destructive',
+    },
+  ]
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -98,7 +130,7 @@ export function DashboardContent() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
+        {dashboardStats.map((stat) => (
           <Card key={stat.title} className="relative overflow-hidden">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -144,7 +176,7 @@ export function DashboardContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orders.slice(0, 5).map((order) => (
+                {ordersData.slice(0, 5).map((order) => (
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">
                       {order.orderNumber}
@@ -152,7 +184,7 @@ export function DashboardContent() {
                     <TableCell>{order.customerName}</TableCell>
                     <TableCell>Meja {order.tableNumber}</TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(order.total)}
+                      {formatCurrency(Number(order.total))}
                     </TableCell>
                     <TableCell>
                       <Badge variant={getStatusBadgeVariant(order.status)}>
@@ -160,7 +192,7 @@ export function DashboardContent() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {formatTime(order.createdAt)}
+                      {formatTime(new Date(order.createdAt))}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -215,9 +247,9 @@ export function DashboardContent() {
             </div>
 
             <div className="rounded-lg bg-muted p-4">
-              <p className="text-xs text-muted-foreground">Total Hari Ini</p>
+              <p className="text-xs text-muted-foreground">Total Hari Ini (Lunas)</p>
               <p className="mt-1 text-2xl font-bold text-card-foreground">
-                {formatCurrency(2520000)}
+                {formatCurrency(totalRevenue)}
               </p>
             </div>
           </CardContent>

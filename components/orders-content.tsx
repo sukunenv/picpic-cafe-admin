@@ -23,6 +23,7 @@ import {
   getStatusLabel,
 } from '@/lib/data'
 import type { Order } from '@/lib/data'
+import api from '@/lib/api'
 
 type FilterTab = 'semua' | 'pending' | 'lunas' | 'belum_bayar'
 
@@ -54,10 +55,57 @@ const ITEMS_PER_PAGE = 10
 
 export function OrdersContent() {
   const [activeTab, setActiveTab] = useState<FilterTab>('semua')
-  const [orders, setOrders] = useState<Order[]>(initialOrders)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [lastRefresh, setLastRefresh] = useState(new Date())
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+
+  const fetchOrders = async (silent = false) => {
+    if (!silent) setIsLoading(true)
+    setIsRefreshing(true)
+    try {
+      const response = await api.get('/orders')
+      setOrders(response.data)
+      setLastRefresh(new Date())
+    } catch (err) {
+      console.error('Fetch orders error:', err)
+    } finally {
+      setIsLoading(false)
+      setIsRefreshing(false)
+    }
+  }
+
+  // Initial fetch
+  useEffect(() => {
+    fetchOrders()
+  }, [])
+
+  // Auto refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      handleRefresh()
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleTabChange = (tab: FilterTab) => {
+    setActiveTab(tab)
+    setCurrentPage(1)
+  }
+
+  const handleRefresh = () => {
+    fetchOrders()
+  }
+
+  const updateOrderStatus = async (id: string, status: string) => {
+    try {
+      await api.put(`/orders/${id}`, { status })
+      fetchOrders(true)
+    } catch (err) {
+      console.error('Update status error:', err)
+    }
+  }
 
   const filteredOrders =
     activeTab === 'semua'
@@ -70,34 +118,19 @@ export function OrdersContent() {
     currentPage * ITEMS_PER_PAGE
   )
 
-  const handleTabChange = (tab: FilterTab) => {
-    setActiveTab(tab)
-    setCurrentPage(1)
-  }
-
-  const handleRefresh = () => {
-    setIsRefreshing(true)
-    // Simulate API refresh
-    setTimeout(() => {
-      setOrders([...initialOrders])
-      setLastRefresh(new Date())
-      setIsRefreshing(false)
-    }, 500)
-  }
-
-  // Auto refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      handleRefresh()
-    }, 30000)
-    return () => clearInterval(interval)
-  }, [])
-
   const statusCounts = {
     semua: orders.length,
     pending: orders.filter((o) => o.status === 'pending').length,
     lunas: orders.filter((o) => o.status === 'lunas').length,
     belum_bayar: orders.filter((o) => o.status === 'belum_bayar').length,
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
   }
 
   return (
@@ -208,22 +241,30 @@ export function OrdersContent() {
                   </ul>
                 </div>
 
-                <div className="flex items-center justify-between border-t pt-3">
+                <div className="flex items-baseline justify-between border-t pt-3">
                   <span className="text-sm font-medium text-card-foreground">Total</span>
                   <span className="text-lg font-bold text-primary">
-                    {formatCurrency(order.total)}
+                    {formatCurrency(Number(order.total))}
                   </span>
                 </div>
 
                 {order.status !== 'lunas' && (
                   <div className="flex gap-2">
                     {order.status === 'pending' && (
-                      <Button size="sm" className="flex-1">
+                      <Button 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => updateOrderStatus(order.id, 'lunas')}
+                      >
                         Selesaikan
                       </Button>
                     )}
                     {order.status === 'belum_bayar' && (
-                      <Button size="sm" className="flex-1">
+                      <Button 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => updateOrderStatus(order.id, 'lunas')}
+                      >
                         Tandai Lunas
                       </Button>
                     )}
