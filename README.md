@@ -2,20 +2,32 @@
 
 # 🍵 Picpic Cafe Admin Dashboard
 
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![Laravel](https://img.shields.io/badge/Laravel_API-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
-![License](https://img.shields.io/badge/License-Proprietary-blue.svg?style=for-the-badge)
+![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
+![React](https://img.shields.io/badge/React-19.x-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind-4.x-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
 
 <br/>
 <img src="./public/logo.png" alt="Dashboard Preview" width="300px" style="border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-top: 10px; margin-bottom: 20px" />
 <br/>
 
-**Sistem Point of Sale (POS) & Manajemen Kedai Kopi Modern.**
+> 🚀 Modern cafe management system built for speed, simplicity, and scale.
+> Dari kasir hingga analytics — semua dalam satu dashboard.
 
 </div>
+
+---
+
+## 🌟 Why Picpic Admin?
+
+- ⚡ Lightning fast dengan Vite + React 19
+- 🎨 Clean UI designed in Figma
+- 📊 Real-time analytics & reporting
+- 🖨️ Bluetooth thermal printer support
+- 📱 Responsive — works on tablet & desktop
+- 🔐 Secure authentication via Laravel Sanctum
+- 🇮🇩 Localized for Indonesian cafe business
 
 ---
 
@@ -102,7 +114,7 @@ Struk kedai dicetak mempergunakan *Web Bluetooth API*.
 
 ## 👨‍💻 Developer
 
-Built with ❤️ by **Kalify.dev**
+Built with 🔥 by **Kalify.dev**
 
 ---
 
