@@ -17,7 +17,9 @@ import {
   QrCode,
   Banknote,
   Layers,
-  Users
+  Users,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import DashboardPage from './components/DashboardPage';
 import KasirPage from './components/KasirPage';
@@ -49,7 +51,7 @@ interface OrderItem extends MenuItem {
   notes: string;
 }
 
-function Sidebar() {
+function Sidebar({ isCollapsed, onToggle }: { isCollapsed: boolean; onToggle: () => void }) {
   const location = useLocation();
 
   const navItems = [
@@ -65,48 +67,70 @@ function Sidebar() {
   ];
 
   return (
-    <aside className="w-[220px] bg-white border-r border-gray-200 flex flex-col">
-      <div className="p-6">
-        <div className="flex items-center gap-3 mb-6">
+    <aside className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out relative`}>
+      {/* Toggle Button - Optimized for Touch (approx 40x40px) */}
+      <button 
+        onClick={onToggle}
+        className="absolute -right-4 top-20 w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition-all z-20 active:scale-90"
+      >
+        {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+      </button>
+
+      <div className={`p-4 ${isCollapsed ? 'px-2' : 'p-6'}`}>
+        <div className={`flex items-center gap-3 mb-10 ${isCollapsed ? 'justify-center' : ''}`}>
           <img 
             src="/logo.png" 
             alt="Picpic Logo" 
-            className="w-10 h-10 object-contain" 
+            className="w-10 h-10 object-contain flex-shrink-0" 
           />
-          <span className="font-bold text-[#6367FF]">Picpic Admin</span>
+          <span className={`font-black text-xl text-[#6367FF] tracking-tighter transition-all duration-300 whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-full'}`}>
+            Picpic Admin
+          </span>
         </div>
 
         <div className="mb-4">
-          <p className="text-xs uppercase text-gray-400 mb-3">Main Menu</p>
-          <nav className="space-y-1">
+          <p className={`text-[10px] font-black uppercase text-gray-400 mb-4 transition-all duration-300 overflow-hidden whitespace-nowrap ${isCollapsed ? 'text-center' : 'px-4'}`}>
+            {isCollapsed ? '•••' : 'Main Menu'}
+          </p>
+          <nav className="space-y-2">
             {navItems.map(item => (
               <Link
                 key={item.name}
                 to={item.path}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full transition-all ${
+                title={isCollapsed ? item.name : ''}
+                className={`w-full flex items-center rounded-2xl transition-all h-12 overflow-hidden ${
+                  isCollapsed ? 'justify-center px-0' : 'px-4 gap-3'
+                } ${
                   location.pathname === item.path
-                    ? 'bg-[#6367FF] text-white'
+                    ? 'bg-[#6367FF] text-white shadow-lg shadow-[#6367FF]/20'
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
-                <item.icon size={18} />
-                <span className="text-sm">{item.name}</span>
+                <item.icon size={20} className="flex-shrink-0" />
+                <span className={`text-sm font-bold whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-full'}`}>
+                  {item.name}
+                </span>
               </Link>
             ))}
           </nav>
         </div>
       </div>
 
-      <div className="mt-auto p-6">
+      <div className={`mt-auto p-4 ${isCollapsed ? 'px-2' : 'p-6'}`}>
         <button 
           onClick={() => {
             localStorage.removeItem('admin_token');
             window.location.href = '/login';
           }}
-          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-full text-red-500 hover:bg-red-50 transition-all font-bold"
+          title={isCollapsed ? 'Logout' : ''}
+          className={`w-full flex items-center rounded-2xl text-red-500 hover:bg-red-50 transition-all font-bold h-12 overflow-hidden ${
+            isCollapsed ? 'justify-center px-0' : 'px-4 gap-3'
+          }`}
         >
-          <LogOut size={18} />
-          <span className="text-sm">Logout</span>
+          <LogOut size={20} className="flex-shrink-0" />
+          <span className={`text-sm whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-full'}`}>
+            Logout
+          </span>
         </button>
       </div>
     </aside>
@@ -284,6 +308,17 @@ function AppContent() {
   const [tableNumber, setTableNumber] = useState('');
   const [orderLoading, setOrderLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('sidebar_collapsed') === 'true';
+  });
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('sidebar_collapsed', String(next));
+      return next;
+    });
+  };
   
   // Payment Modal States
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -396,7 +431,7 @@ function AppContent() {
 
   return (
     <div className="flex h-screen bg-[#F8F7FF] font-['Plus_Jakarta_Sans',_sans-serif]">
-      {isAuthenticated && <Sidebar />}
+      {isAuthenticated && <Sidebar isCollapsed={isSidebarCollapsed} onToggle={toggleSidebar} />}
 
       <main className="flex-1 overflow-y-auto">
         <Routes>
@@ -414,7 +449,7 @@ function AppContent() {
         </Routes>
       </main>
 
-      {isAuthenticated && (
+      {isAuthenticated && location.pathname === '/kasir' && (
         <RightPanel
           orderItems={orderItems}
           paymentMethod={paymentMethod}
