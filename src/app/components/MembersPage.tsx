@@ -27,6 +27,10 @@ interface Member {
 
 const MembersPage = () => {
   const [members, setMembers] = useState<Member[]>([]);
+  const [pagination, setPagination] = useState({
+    current_page: 1, last_page: 1, total: 0, from: 0, to: 0
+  });
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeTier, setActiveTier] = useState('Semua');
@@ -39,10 +43,19 @@ const MembersPage = () => {
       const res = await api.get('/admin/members', {
         params: {
           search: search || undefined,
-          tier: activeTier !== 'Semua' ? activeTier : undefined
+          tier: activeTier !== 'Semua' ? activeTier : undefined,
+          page: page,
+          per_page: 10
         }
       });
-      setMembers(res.data);
+      setMembers(res.data.data);
+      setPagination({
+        current_page: res.data.current_page,
+        last_page: res.data.last_page,
+        total: res.data.total,
+        from: res.data.from,
+        to: res.data.to,
+      });
     } catch (err) {
       console.error('Failed to fetch members:', err);
     } finally {
@@ -51,11 +64,15 @@ const MembersPage = () => {
   };
 
   useEffect(() => {
+    setPage(1);
+  }, [search, activeTier]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       fetchMembers();
     }, 500);
     return () => clearTimeout(timer);
-  }, [search, activeTier]);
+  }, [search, activeTier, page]);
 
   const getTierColor = (tier: string) => {
     switch (tier.toLowerCase()) {
@@ -193,6 +210,34 @@ const MembersPage = () => {
           </table>
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && members.length > 0 && (
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+            Showing {pagination.from || 0}-{pagination.to || 0} of {pagination.total} members
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(page - 1)}
+              disabled={page === 1}
+              className="px-6 py-2.5 rounded-full bg-white border border-gray-200 text-xs font-black text-gray-600 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+            >
+              Previous
+            </button>
+            <div className="w-10 h-10 flex items-center justify-center bg-[#6367FF] text-white rounded-full text-xs font-black shadow-md shadow-[#6367FF]/30">
+              {pagination.current_page}
+            </div>
+            <button
+              onClick={() => setPage(page + 1)}
+              disabled={page === pagination.last_page}
+              className="px-6 py-2.5 rounded-full bg-white border border-gray-200 text-xs font-black text-gray-600 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
