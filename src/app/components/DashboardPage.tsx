@@ -24,7 +24,7 @@ export default function DashboardPage() {
   const fetchDashboardData = useCallback(async () => {
     try {
       const [ordersRes, summaryData] = await Promise.all([
-        api.get('/orders?per_page=10'),
+        api.get('/orders?per_page=100'),
         analyticsService.getSummary(),
       ]);
 
@@ -88,7 +88,7 @@ export default function DashboardPage() {
   const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   
   const hourlyCount: Record<string, number> = {};
-  for (let i = 0; i < 24; i++) {
+  for (let i = 15; i <= 23; i++) {
     hourlyCount[`${i.toString().padStart(2, '0')}:00`] = 0;
   }
   
@@ -101,17 +101,7 @@ export default function DashboardPage() {
     }
   });
 
-  // Only show hours with data PLUS min range for readability (e.g. 06:00 to current hour +1)
-  const currentHour = today.getHours();
-  const minHour = Math.max(0, currentHour - 6);
-  const maxHour = Math.min(23, currentHour + 2);
-  
-  const chartData = Object.entries(hourlyCount)
-    .filter(([hour]) => {
-      const h = parseInt(hour.split(':')[0]);
-      return h >= minHour && h <= maxHour;
-    })
-    .map(([hour, count]) => ({ hour, orders: count }));
+  const chartData = Object.entries(hourlyCount).map(([hour, count]) => ({ hour, orders: count }));
 
   const recentOrders = orders.slice(0, 8);
 

@@ -21,7 +21,8 @@ interface Order {
   table_number: string;
   total: number;
   status: string;
-  order_items: OrderItem[];
+  order_items?: OrderItem[];
+  orderItems?: OrderItem[];
   payment_method: string;
   created_at: string;
 }
@@ -326,7 +327,7 @@ export default function OrdersPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
-                        {selectedOrder.order_items.map((item) => (
+                        {(selectedOrder.orderItems || selectedOrder.order_items || []).map((item) => (
                           <tr key={item.id}>
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-3">

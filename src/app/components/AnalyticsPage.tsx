@@ -64,11 +64,11 @@ export default function AnalyticsPage() {
     try {
       setLoading(true);
       const [summary, chart, topMenus, payments, peakHours] = await Promise.all([
-        analyticsService.getSummary(),
-        analyticsService.getChartData(),
-        analyticsService.getTopMenus(),
-        analyticsService.getPaymentMethods(),
-        analyticsService.getPeakHours()
+        analyticsService.getSummary(activeTab),
+        analyticsService.getChartData(activeTab),
+        analyticsService.getTopMenus(activeTab),
+        analyticsService.getPaymentMethods(activeTab),
+        analyticsService.getPeakHours(activeTab)
       ]);
       
       setData({ summary, chart, topMenus, payments, peakHours });
@@ -131,8 +131,8 @@ export default function AnalyticsPage() {
               <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-4">
                 <TrendingUp size={24} />
               </div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pendapatan Hari Ini</p>
-              <h3 className="text-2xl font-black text-gray-800">{formatIDR(data.summary?.today_revenue || 0)}</h3>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pendapatan {activeTab === 'Today' ? 'Hari Ini' : activeTab === 'This Week' ? 'Mingguan' : 'Bulanan'}</p>
+              <h3 className="text-2xl font-black text-gray-800">{formatIDR(data.summary?.period_revenue || 0)}</h3>
               <div className="flex items-center gap-1 mt-2 text-green-500 font-bold text-xs">
                 <ArrowUpRight size={14} />
                 <span>+12.5% vs kemarin</span>
@@ -146,9 +146,9 @@ export default function AnalyticsPage() {
               <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
                 <ShoppingBag size={24} />
               </div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pesanan Hari Ini</p>
-              <h3 className="text-2xl font-black text-gray-800">{data.summary?.today_orders || 0} Order</h3>
-              <p className="text-xs text-gray-400 font-medium mt-2">Dipesan pelanggan hari ini</p>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pesanan {activeTab === 'Today' ? 'Hari Ini' : activeTab === 'This Week' ? 'Mingguan' : 'Bulanan'}</p>
+              <h3 className="text-2xl font-black text-gray-800">{data.summary?.period_orders || 0} Order</h3>
+              <p className="text-xs text-gray-400 font-medium mt-2">Dipesan pada periode ini</p>
             </div>
 
             <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group">
@@ -171,7 +171,9 @@ export default function AnalyticsPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h3 className="text-lg font-black text-gray-800 uppercase tracking-tight">Tren Pendapatan</h3>
-            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">7 Hari Terakhir</p>
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+              {activeTab === 'Today' ? 'Pergerakan Jam' : activeTab === 'This Week' ? '7 Hari Terakhir' : 'Bulan Ini'}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-[#6367FF] rounded-full"></div>

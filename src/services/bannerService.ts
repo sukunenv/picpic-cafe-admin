@@ -3,7 +3,12 @@ import api from '../lib/api';
 export interface Banner {
   id: number;
   title: string;
-  image_url: string;
+  subtitle?: string;
+  tag?: string;
+  image?: string;
+  gradient_start?: string;
+  gradient_end?: string;
+  type: 'image' | 'gradient';
   is_active: boolean;
   created_at?: string;
 }

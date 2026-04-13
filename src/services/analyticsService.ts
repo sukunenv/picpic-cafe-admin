@@ -1,13 +1,8 @@
 import api from '../lib/api';
 
 export interface AnalyticsSummary {
-  today_revenue: number;
-  this_week_revenue: number;
-  this_month_revenue: number;
-  today_orders: number;
-  total_orders: number;
-  pending_orders: number;
-  completed_orders: number;
+  period_revenue: number;
+  period_orders: number;
   avg_order_value: number;
 }
 
@@ -35,28 +30,28 @@ export interface PeakHourData {
 }
 
 export const analyticsService = {
-  getSummary: async () => {
-    const response = await api.get('/analytics/summary');
+  getSummary: async (period: string = 'Today') => {
+    const response = await api.get(`/analytics/summary?period=${encodeURIComponent(period)}`);
     return response.data as AnalyticsSummary;
   },
   
-  getChartData: async () => {
-    const response = await api.get('/analytics/chart');
+  getChartData: async (period: string = 'Today') => {
+    const response = await api.get(`/analytics/chart?period=${encodeURIComponent(period)}`);
     return response.data as ChartData[];
   },
   
-  getTopMenus: async () => {
-    const response = await api.get('/analytics/top-menus');
+  getTopMenus: async (period: string = 'Today') => {
+    const response = await api.get(`/analytics/top-menus?period=${encodeURIComponent(period)}`);
     return response.data as TopMenu[];
   },
   
-  getPaymentMethods: async () => {
-    const response = await api.get('/analytics/payment-methods');
+  getPaymentMethods: async (period: string = 'Today') => {
+    const response = await api.get(`/analytics/payment-methods?period=${encodeURIComponent(period)}`);
     return response.data as PaymentMethodData[];
   },
   
-  getPeakHours: async () => {
-    const response = await api.get('/analytics/peak-hours');
+  getPeakHours: async (period: string = 'Today') => {
+    const response = await api.get(`/analytics/peak-hours?period=${encodeURIComponent(period)}`);
     return response.data as PeakHourData[];
   }
 };

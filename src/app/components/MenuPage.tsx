@@ -61,6 +61,7 @@ export default function MenuPage() {
     image: '',
     is_available: true
   });
+  const [isUploading, setIsUploading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
@@ -118,6 +119,16 @@ export default function MenuPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Debug payload
+    console.log("Form data yang dikirim:", formData);
+    console.log("Image URL:", formData.image);
+
+    if (isUploading) {
+      alert("Harap tunggu hingga proses upload foto selesai.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     const payload = {
@@ -128,9 +139,11 @@ export default function MenuPage() {
 
     try {
       if (currentMenu) {
-        await api.put(`/menus/${currentMenu.id}`, payload);
+        const res = await api.put(`/menus/${currentMenu.id}`, payload);
+        console.log("Response Update:", res.data);
       } else {
-        await api.post('/menus', payload);
+        const res = await api.post('/menus', payload);
+        console.log("Response Store:", res.data);
       }
       handleCloseModal();
       fetchData();
@@ -400,33 +413,105 @@ export default function MenuPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">URL Foto Menu</label>
-                <input
-                  type="url"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  className="w-full px-5 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-[#6367FF] transition-all font-bold text-sm"
-                  placeholder="https://example.com/foto-menu.jpg"
-                />
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Foto Menu (Cloudinary)</label>
                 
-                {/* Preview Image */}
-                <div className="mt-4 flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-100 rounded-3xl min-h-[160px] bg-gray-50/50">
-                  {formData.image ? (
-                    <div className="relative group overflow-hidden rounded-2xl shadow-md">
-                      <img 
-                        src={formData.image} 
-                        alt="Preview" 
-                        onError={(e) => (e.currentTarget.src = '/logo.png')}
-                        className="max-h-32 object-contain" 
-                      />
+                <div 
+                  className={`relative group flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-[32px] transition-all duration-300 ${
+                    formData.image 
+                      ? 'border-[#6367FF]/30 bg-[#6367FF]/5' 
+                      : 'border-gray-200 bg-gray-50/50 hover:bg-gray-50 hover:border-[#6367FF]/40'
+                  }`}
+                >
+                  {isUploading ? (
+                    <div className="flex flex-col items-center gap-4 py-6">
+                      <div className="w-10 h-10 rounded-full border-4 border-[#6367FF] border-t-transparent animate-spin" />
+                      <p className="text-[10px] font-black text-[#6367FF] uppercase tracking-widest animate-pulse">Sedang mengupload...</p>
+                    </div>
+                  ) : formData.image ? (
+                    <div className="relative w-full flex flex-col items-center gap-4">
+                      <div className="relative group/img overflow-hidden rounded-2xl shadow-xl border-4 border-white">
+                        <img 
+                          src={formData.image} 
+                          alt="Menu Preview" 
+                          className="w-48 h-48 object-cover group-hover/img:scale-105 transition-transform duration-500" 
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                          <ImageIcon className="text-white" size={32} />
+                        </div>
+                      </div>
+                      <div className="bg-green-50 text-green-600 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-green-100 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                        Foto berhasil diupload
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById('menu-upload')?.click()}
+                        className="px-6 py-2 bg-white text-[#6367FF] text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg border border-[#6367FF]/10 hover:bg-[#6367FF] hover:text-white transition-all font-bold"
+                      >
+                        Ganti Foto
+                      </button>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center gap-2 text-gray-400">
-                      <ImageIcon size={32} />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Preview Area</span>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('menu-upload')?.click()}
+                      className="w-full h-full flex flex-col items-center gap-4 py-8"
+                    >
+                      <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-sm text-gray-400 group-hover:text-[#6367FF] group-hover:scale-110 transition-all duration-300">
+                        <Plus size={32} />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-1">Upload Foto Hidangan</p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Format: JPG, PNG, WEBP (Maks. 5MB)</p>
+                      </div>
+                    </button>
                   )}
+                  
+                  <input
+                    id="menu-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+
+                      try {
+                        setIsUploading(true);
+                        const data = new FormData();
+                        data.append('file', file);
+                        data.append('upload_preset', 'picpic_menus');
+                        
+                        console.log('Starting upload to Cloudinary...');
+                        const res = await fetch(
+                          'https://api.cloudinary.com/v1_1/dkcl8wzdc/image/upload',
+                          { method: 'POST', body: data }
+                        );
+                        
+                        const result = await res.json();
+                        console.log('Cloudinary Response:', result);
+                        
+                        if (result.secure_url) {
+                          // Insert transformations
+                          const transformedUrl = result.secure_url.replace(
+                            '/upload/',
+                            '/upload/w_500,h_500,c_fill,g_auto,q_auto,f_auto/'
+                          );
+                          
+                          setFormData(prev => ({ ...prev, image: transformedUrl }));
+                          console.log('Foto berhasil diupload:', transformedUrl);
+                        } else {
+                          throw new Error(result.error?.message || 'Upload failed');
+                        }
+                      } catch (err: any) {
+                        console.error('Upload failed:', err);
+                        alert(`Gagal mengupload foto: ${err.message}`);
+                      } finally {
+                        setIsUploading(false);
+                      }
+                    }}
+                    className="hidden"
+                  />
                 </div>
               </div>
 

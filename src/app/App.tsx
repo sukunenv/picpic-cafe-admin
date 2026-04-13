@@ -15,17 +15,22 @@ import {
   X,
   CreditCard,
   QrCode,
-  Banknote
+  Banknote,
+  Layers,
+  Users
 } from 'lucide-react';
 import DashboardPage from './components/DashboardPage';
 import KasirPage from './components/KasirPage';
 import OrdersPage from './components/OrdersPage';
+import CategoriesPage from './components/CategoriesPage';
 import MenuPage from './components/MenuPage';
 import BannersPage from './components/BannersPage';
 import AnalyticsPage from './components/AnalyticsPage';
 import SettingsPage from './components/SettingsPage';
 import LoginPage from './components/LoginPage';
 import ReceiptModal from './components/ReceiptModal';
+import MembersPage from './components/MembersPage';
+import MemberDetailPage from './components/MemberDetailPage';
 import { Navigate } from 'react-router';
 import api from '../lib/api';
 
@@ -50,7 +55,9 @@ function Sidebar() {
     { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
     { name: 'Kasir', icon: ShoppingCart, path: '/kasir' },
     { name: 'Orders', icon: Package, path: '/orders' },
+    { name: 'Members', icon: Users, path: '/members' },
     { name: 'Menu', icon: MenuIcon, path: '/menu' },
+    { name: 'Kategori', icon: Layers, path: '/categories' },
     { name: 'Banners', icon: ImageIcon, path: '/banners' },
     { name: 'Analytics', icon: BarChart3, path: '/analytics' },
     { name: 'Settings', icon: Settings, path: '/settings' },
@@ -388,7 +395,10 @@ function AppContent() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/kasir" element={<KasirPage onAddToOrder={addToOrder} />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/members" element={<MembersPage />} />
+          <Route path="/members/:id" element={<MemberDetailPage />} />
           <Route path="/menu" element={<MenuPage />} />
+          <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/banners" element={<BannersPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
