@@ -17,16 +17,21 @@ export default function LoginPage() {
 
     try {
       const response = await api.post('/login', { email, password });
-      const { token } = response.data;
+      const { token, user } = response.data;
       
       localStorage.setItem('admin_token', token);
+      localStorage.setItem('user_role', user.role || 'kasir');
       navigate('/');
     } catch (err: any) {
       console.error('Login failed:', err);
-      setError(
-        err.response?.data?.message || 
-        'Login gagal. Silakan periksa email dan password Anda.'
-      );
+      if (err.response?.status === 403) {
+        setError('Akses ditolak! Akun ini bukan akun staff Picpic Cafe.');
+      } else {
+        setError(
+          err.response?.data?.message || 
+          'Login gagal. Silakan periksa email dan password Anda.'
+        );
+      }
     } finally {
       setLoading(false);
     }

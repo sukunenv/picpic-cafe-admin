@@ -31,6 +31,7 @@ import LoginPage from './components/LoginPage';
 import ReceiptModal from './components/ReceiptModal';
 import MembersPage from './components/MembersPage';
 import MemberDetailPage from './components/MemberDetailPage';
+import AccessDenied from './components/AccessDenied';
 import { Navigate } from 'react-router';
 import api from '../lib/api';
 
@@ -268,6 +269,14 @@ function RightPanel({
   );
 }
 
+const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles: string[] }) => {
+  const role = localStorage.getItem('user_role') || 'kasir';
+  if (!allowedRoles.includes(role)) {
+    return <AccessDenied />;
+  }
+  return <>{children}</>;
+};
+
 function AppContent() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'QRIS' | 'Transfer' | null>(null);
@@ -395,13 +404,13 @@ function AppContent() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/kasir" element={<KasirPage onAddToOrder={addToOrder} />} />
           <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/members" element={<MembersPage />} />
-          <Route path="/members/:id" element={<MemberDetailPage />} />
+          <Route path="/members" element={<ProtectedRoute allowedRoles={['admin', 'owner']}><MembersPage /></ProtectedRoute>} />
+          <Route path="/members/:id" element={<ProtectedRoute allowedRoles={['admin', 'owner']}><MemberDetailPage /></ProtectedRoute>} />
           <Route path="/menu" element={<MenuPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/banners" element={<BannersPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/analytics" element={<ProtectedRoute allowedRoles={['admin', 'owner']}><AnalyticsPage /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute allowedRoles={['admin', 'owner', 'kasir']}><SettingsPage /></ProtectedRoute>} />
         </Routes>
       </main>
 

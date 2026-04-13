@@ -85,27 +85,45 @@ export default function CategoriesPage() {
     e.preventDefault();
     try {
       setIsSubmitting(true);
-      const formData = new FormData();
-      formData.append('name', name);
-      formData.append('is_active', isActive ? '1' : '0');
+      
+      let finalImageUrl = editData ? editData.image : null;
+
       if (imageFile) {
-        formData.append('image', imageFile);
-      } else if (!editData) {
+        const uploadData = new FormData();
+        uploadData.append('file', imageFile);
+        uploadData.append('upload_preset', 'picpic_menus'); 
+
+        const res = await fetch('https://api.cloudinary.com/v1_1/dkcl8wzdc/image/upload', {
+          method: 'POST',
+          body: uploadData
+        });
+        const result = await res.json();
+        if (result.secure_url) {
+           finalImageUrl = result.secure_url.replace(
+             '/upload/',
+             '/upload/w_500,h_500,c_fill,g_auto,q_auto,f_auto/'
+           );
+        } else {
+           throw new Error("Gagal mengupload gambar ke sistem cloud.");
+        }
+      }
+
+      if (!finalImageUrl) {
         alert('Gambar kategori wajib diisi');
+        setIsSubmitting(false);
         return;
       }
 
+      const payload = {
+        name,
+        is_active: isActive,
+        image: finalImageUrl
+      };
+
       if (editData) {
-        // Axios multipart for PUT/PATCH is sometimes tricky with FormData, 
-        // Laravel expects _method: 'PUT' in POST if using multipart
-        formData.append('_method', 'PUT');
-        await api.post(`/categories/${editData.id}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        await api.put(`/categories/${editData.id}`, payload);
       } else {
-        await api.post('/categories', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        await api.post('/categories', payload);
       }
 
       setShowModal(false);

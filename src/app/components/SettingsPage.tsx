@@ -107,6 +107,7 @@ function Field({ label, icon: Icon, ...props }: {
 }
 
 export default function SettingsPage() {
+  const role = localStorage.getItem('user_role');
   const [toast, setToast] = useState('');
 
   // State — loaded from localStorage
@@ -302,7 +303,7 @@ export default function SettingsPage() {
       </div>      <div className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Kolom Kiri: Operational Stack */}
-          <div className="flex flex-col gap-6">
+          <div className={role === 'kasir' ? "grid grid-cols-1 md:grid-cols-2 gap-6 lg:col-span-2" : "flex flex-col gap-6"}>
             {/* 1. Profil Cafe */}
             <SettingSection icon={Store} title="Profil Cafe" subtitle="Informasi dasar yang tampil di struk dan aplikasi">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -333,28 +334,32 @@ export default function SettingsPage() {
             </SettingSection>
 
             {/* 2. Info Pembayaran */}
-            <SettingSection icon={CreditCard} title="Info Rekening Transfer" subtitle="Ditampilkan saat pelanggan memilih metode Transfer">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <Field label="Nama Bank" value={bankSettings.bank_name} onChange={e => setBankSettings(p => ({ ...p, bank_name: e.target.value }))} placeholder="BCA, Mandiri, BRI..." />
-                <Field label="Nomor Rekening" value={bankSettings.bank_account_number} onChange={e => setBankSettings(p => ({ ...p, bank_account_number: e.target.value }))} placeholder="1234567890" />
-                <Field label="Atas Nama" className="md:col-span-2" value={bankSettings.bank_account_name} onChange={e => setBankSettings(p => ({ ...p, bank_account_name: e.target.value }))} placeholder="PICPIC CAFE" />
-              </div>
-              <button onClick={saveBankSettings}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#6367FF] text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-[#5558DD] transition-all shadow-lg shadow-[#6367FF]/20">
-                <Save size={14} /> Simpan Rekening
-              </button>
-            </SettingSection>
+            {role !== 'kasir' && (
+              <SettingSection icon={CreditCard} title="Info Rekening Transfer" subtitle="Ditampilkan saat pelanggan memilih metode Transfer">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <Field label="Nama Bank" value={bankSettings.bank_name} onChange={e => setBankSettings(p => ({ ...p, bank_name: e.target.value }))} placeholder="BCA, Mandiri, BRI..." />
+                  <Field label="Nomor Rekening" value={bankSettings.bank_account_number} onChange={e => setBankSettings(p => ({ ...p, bank_account_number: e.target.value }))} placeholder="1234567890" />
+                  <Field label="Atas Nama" className="md:col-span-2" value={bankSettings.bank_account_name} onChange={e => setBankSettings(p => ({ ...p, bank_account_name: e.target.value }))} placeholder="PICPIC CAFE" />
+                </div>
+                <button onClick={saveBankSettings}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#6367FF] text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-[#5558DD] transition-all shadow-lg shadow-[#6367FF]/20">
+                  <Save size={14} /> Simpan Rekening
+                </button>
+              </SettingSection>
+            )}
 
             {/* 3. Notifikasi */}
-            <SettingSection icon={Bell} title="Notifikasi" subtitle="Atur alert yang ingin diterima admin">
-              <Toggle value={notif.newOrder} onChange={v => setNotif(p => ({ ...p, newOrder: v }))} label="Order Masuk Baru" />
-              <Toggle value={notif.orderCompleted} onChange={v => setNotif(p => ({ ...p, orderCompleted: v }))} label="Order Selesai (Lunas)" />
-              <Toggle value={notif.lowStock} onChange={v => setNotif(p => ({ ...p, lowStock: v }))} label="Stok Menu Menipis" />
-              <button onClick={() => save('settings_notif', notif, 'Pengaturan notifikasi')}
-                className="flex items-center gap-2 px-5 py-2.5 mt-5 bg-[#6367FF] text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-[#5558DD] transition-all shadow-lg shadow-[#6367FF]/20">
-                <Save size={14} /> Simpan Notifikasi
-              </button>
-            </SettingSection>
+            {role !== 'kasir' && (
+              <SettingSection icon={Bell} title="Notifikasi" subtitle="Atur alert yang ingin diterima admin">
+                <Toggle value={notif.newOrder} onChange={v => setNotif(p => ({ ...p, newOrder: v }))} label="Order Masuk Baru" />
+                <Toggle value={notif.orderCompleted} onChange={v => setNotif(p => ({ ...p, orderCompleted: v }))} label="Order Selesai (Lunas)" />
+                <Toggle value={notif.lowStock} onChange={v => setNotif(p => ({ ...p, lowStock: v }))} label="Stok Menu Menipis" />
+                <button onClick={() => save('settings_notif', notif, 'Pengaturan notifikasi')}
+                  className="flex items-center gap-2 px-5 py-2.5 mt-5 bg-[#6367FF] text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-[#5558DD] transition-all shadow-lg shadow-[#6367FF]/20">
+                  <Save size={14} /> Simpan Notifikasi
+                </button>
+              </SettingSection>
+            )}
 
             {/* 4. Printer Thermal */}
             <SettingSection icon={Printer} title="Pengaturan Printer Thermal" subtitle="Konfigurasi Bluetooth printer untuk cetak struk">
@@ -382,7 +387,8 @@ export default function SettingsPage() {
           </div>
 
           {/* Kolom Kanan: Loyalty & Tiers (Satu Card Panjang) */}
-          <div>
+          {role !== 'kasir' && (
+            <div>
             <SettingSection icon={Gift} title="Loyalty Poin" subtitle="Atur sistem poin dan keanggotaan member">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <Field label="Kelipatan Belanja (Rp)" value={loyalty.point_value} onChange={e => setLoyalty(p => ({ ...p, point_value: e.target.value }))} placeholder="5000" type="number" />
@@ -390,10 +396,13 @@ export default function SettingsPage() {
                 <Field label="Masa Berlaku (Bulan)" value={loyalty.point_expiry_months} onChange={e => setLoyalty(p => ({ ...p, point_expiry_months: e.target.value }))} placeholder="3" type="number" />
               </div>
               
-              <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 mb-6">
+              <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 mb-6 flex flex-col gap-1.5">
                 <p className="text-xs font-bold text-indigo-600 flex items-center gap-2">
-                  <CheckCircle2 size={14} />
-                  Preview: Setiap belanja Rp {Number(loyalty.point_value).toLocaleString('id-ID')} pelanggan mendapat {loyalty.point_multiplier} poin • Berlaku {loyalty.point_expiry_months} bulan
+                  <CheckCircle2 size={14} className="shrink-0" />
+                  Setiap kelipatan Rp {Number(loyalty.point_value).toLocaleString('id-ID')} = {loyalty.point_multiplier} poin
+                </p>
+                <p className="text-[11px] font-bold text-indigo-600/70 pl-5.5 ml-1 flex items-center gap-2">
+                  Contoh: belanja Rp {(Number(loyalty.point_value) * 3).toLocaleString('id-ID')} → dapat {Number(loyalty.point_multiplier) * 3} poin
                 </p>
               </div>
 
@@ -490,14 +499,15 @@ export default function SettingsPage() {
               </div>
             </SettingSection>
           </div>
+          )}
         </div>
       </div>
 
       {/* Tentang Aplikasi */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center text-center h-24 mt-4">
-        <p className="text-xs font-bold text-gray-500 mb-1">Picpic Cafe Admin • V02 Dev</p>
+        <p className="text-xs font-bold text-gray-500 mb-1">Apps Kedai PICPIC • V03</p>
         <p className="text-[10px] text-gray-400 font-bold tracking-wide flex items-center justify-center">
-          Built with <img src="/logo.png" alt="Picpic" className="w-3.5 h-3.5 inline-block mx-1 opacity-80" /> by Kalify.dev • 2026
+          Built by Kalify.dev • 2026
         </p>
       </div>
 
