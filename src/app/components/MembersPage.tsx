@@ -22,6 +22,7 @@ interface Member {
   avatar: string | null;
   points: number;
   tier: string;
+  card_number: string | null;
   created_at: string;
 }
 
@@ -129,6 +130,7 @@ const MembersPage = () => {
             <thead>
               <tr className="border-b border-gray-50">
                 <th className="px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Member</th>
+                <th className="w-[180px] px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Nomor Kartu</th>
                 <th className="w-[150px] px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Kontak</th>
                 <th className="w-[120px] px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Tier</th>
                 <th className="w-[100px] px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Poin</th>
@@ -170,6 +172,11 @@ const MembersPage = () => {
                           <p className="text-[10px] text-gray-400 font-medium truncate">{member.email}</p>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-4 py-2">
+                       <p className="font-mono text-[10px] lg:text-xs font-bold text-[#6367FF] bg-[#6367FF]/5 px-3 py-1.5 rounded-lg border border-[#6367FF]/10 inline-block">
+                        {member.card_number || 'BELUM ADA'}
+                      </p>
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-2 text-[10px] lg:text-xs font-bold text-gray-600">

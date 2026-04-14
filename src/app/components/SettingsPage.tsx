@@ -153,9 +153,9 @@ export default function SettingsPage() {
 
   // New Tiers State
   const [tiers, setTiers] = useState({
-    regular: { name: 'Regular', min: '0', max: '500', color: '#9CA3AF' },
-    silver: { name: 'Silver', min: '501', max: '1500', color: '#94A3B8' },
-    gold: { name: 'Gold', min: '1501', max: '999999', color: '#F59E0B' }
+    regular: { name: 'Regular', min: '0', max: '500', color: '#9CA3AF', benefits: '' },
+    silver: { name: 'Silver', min: '501', max: '1500', color: '#94A3B8', benefits: '' },
+    gold: { name: 'Gold', min: '1501', max: '999999', color: '#F59E0B', benefits: '' }
   });
 
   useEffect(() => {
@@ -191,18 +191,21 @@ export default function SettingsPage() {
           min: settings.find((s: any) => s.key === 'tier_regular_min')?.value || '0',
           max: settings.find((s: any) => s.key === 'tier_regular_max')?.value || '500',
           color: settings.find((s: any) => s.key === 'tier_regular_color')?.value || '#9CA3AF',
+          benefits: settings.find((s: any) => s.key === 'tier_regular_benefits')?.value || '',
         },
         silver: {
           name: settings.find((s: any) => s.key === 'tier_silver_name')?.value || 'Silver',
           min: settings.find((s: any) => s.key === 'tier_silver_min')?.value || '501',
           max: settings.find((s: any) => s.key === 'tier_silver_max')?.value || '1500',
           color: settings.find((s: any) => s.key === 'tier_silver_color')?.value || '#94A3B8',
+          benefits: settings.find((s: any) => s.key === 'tier_silver_benefits')?.value || '',
         },
         gold: {
           name: settings.find((s: any) => s.key === 'tier_gold_name')?.value || 'Gold',
           min: settings.find((s: any) => s.key === 'tier_gold_min')?.value || '1501',
           max: settings.find((s: any) => s.key === 'tier_gold_max')?.value || '999999',
           color: settings.find((s: any) => s.key === 'tier_gold_color')?.value || '#F59E0B',
+          benefits: settings.find((s: any) => s.key === 'tier_gold_benefits')?.value || '',
         }
       });
     } catch (err) {
@@ -239,6 +242,10 @@ export default function SettingsPage() {
         { key: 'tier_gold_min', value: tiers.gold.min },
         { key: 'tier_gold_max', value: tiers.gold.max },
         { key: 'tier_gold_color', value: tiers.gold.color },
+
+        { key: 'tier_regular_benefits', value: tiers.regular.benefits },
+        { key: 'tier_silver_benefits', value: tiers.silver.benefits },
+        { key: 'tier_gold_benefits', value: tiers.gold.benefits },
       ];
 
       for (const update of updates) {
@@ -447,6 +454,17 @@ export default function SettingsPage() {
                           <Field label="Nama Tier" value={data.name} onChange={e => setTiers(prev => ({ ...prev, [t.id]: { ...data, name: e.target.value } }))} />
                           <Field label="Poin Minimal" type="number" value={data.min} onChange={e => setTiers(prev => ({ ...prev, [t.id]: { ...data, min: e.target.value } }))} />
                           <Field label="Poin Maksimal" type="number" value={data.max} onChange={e => setTiers(prev => ({ ...prev, [t.id]: { ...data, max: e.target.value } }))} />
+                        </div>
+
+                        <div className="mb-4">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1.5">Keuntungan Member (Satu per baris)</label>
+                          <textarea
+                            value={data.benefits}
+                            onChange={e => setTiers(prev => ({ ...prev, [t.id]: { ...data, benefits: e.target.value } }))}
+                            placeholder="Contoh:&#10;• Cashback 5%&#10;• Voucher Ulang Tahun"
+                            rows={3}
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs font-medium text-gray-700 focus:outline-none focus:border-[#6367FF] focus:bg-white transition-all resize-none"
+                          />
                         </div>
 
                         <div className="flex items-center gap-3 pt-2">

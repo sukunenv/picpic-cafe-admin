@@ -148,7 +148,10 @@ function RightPanel({
   tableNumber,
   setTableNumber,
   onProceedCheckout,
-  loading
+  loading,
+  onScanMember,
+  memberInfo,
+  setMemberInfo,
 }: {
   orderItems: OrderItem[];
   paymentMethod: 'Cash' | 'QRIS' | 'Transfer' | null;
@@ -159,9 +162,28 @@ function RightPanel({
   setTableNumber: (table: string) => void;
   onProceedCheckout: () => void;
   loading: boolean;
+  onScanMember: (cardNumber: string) => void;
+  memberInfo: any;
+  setMemberInfo: (info: any) => void;
 }) {
   const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const total = subtotal;
+
+  const [scanInput, setScanInput] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+
+  const handleScan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!scanInput.trim()) return;
+
+    try {
+      setIsScanning(true);
+      onScanMember(scanInput);
+      setScanInput('');
+    } finally {
+      setIsScanning(false);
+    }
+  };
 
   return (
     <aside className="w-[320px] bg-white border-l border-gray-200 flex flex-col">
@@ -185,30 +207,74 @@ function RightPanel({
 
       <div className="flex-1 overflow-y-auto p-4">
         <div className="mb-6 space-y-3">
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
-              Nama Customer <span className="text-red-500">*</span>
+          <form onSubmit={handleScan}>
+            <label className="text-xs font-black text-[#6367FF] uppercase block mb-1.5 flex items-center gap-2">
+              <QrCode size={12} /> Scan / Input Member ID
             </label>
-            <input
-              type="text"
-              placeholder="Nama pembeli..."
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#6367FF]"
-              required
-            />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
-              No. Meja
-            </label>
-            <input
-              type="text"
-              placeholder="Nomor meja... (opsional)"
-              value={tableNumber}
-              onChange={(e) => setTableNumber(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#6367FF]"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Scan kartu member..."
+                value={scanInput}
+                onChange={(e) => setScanInput(e.target.value)}
+                className="w-full pl-3 pr-10 py-2.5 bg-[#6367FF]/5 border border-[#6367FF]/20 rounded-xl text-sm focus:outline-none focus:border-[#6367FF] font-mono placeholder:text-gray-300"
+              />
+              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-[#6367FF] hover:scale-110 transition-transform">
+                {isScanning ? <Loader2 className="animate-spin" size={16} /> : <ChevronRight size={18} />}
+              </button>
+            </div>
+          </form>
+
+          {memberInfo && (
+            <div className="bg-gradient-to-br from-[#6367FF] to-[#8494FF] p-3 rounded-2xl text-white shadow-lg shadow-[#6367FF]/20 animate-in fade-in slide-in-from-top-2 duration-300 relative overflow-hidden">
+               <div className="absolute -right-4 -bottom-4 opacity-10">
+                 <Users size={60} />
+               </div>
+               <div className="flex justify-between items-start mb-2 relative">
+                 <div className="flex items-center gap-2">
+                   <div className="w-6 h-6 bg-white/20 rounded-md flex items-center justify-center text-[10px] font-black uppercase">
+                     {memberInfo.tier ? memberInfo.tier.charAt(0) : 'M'}
+                   </div>
+                   <p className="text-[10px] font-black uppercase tracking-widest">{memberInfo.tier || 'Member'}</p>
+                 </div>
+                 <button onClick={() => setMemberInfo(null)} className="p-1 hover:bg-white/20 rounded-md transition-colors">
+                   <X size={12} />
+                 </button>
+               </div>
+               <p className="font-bold text-sm truncate">{memberInfo.name}</p>
+               <div className="flex justify-between items-end mt-1">
+                 <p className="text-[9px] font-mono opacity-70">{memberInfo.card_number || 'No Card'}</p>
+                 <p className="text-xs font-black">{(memberInfo.points || 0).toLocaleString('id-ID')} pts</p>
+               </div>
+            </div>
+          )}
+
+          <div className="pt-2 border-t border-gray-50 space-y-3">
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase block mb-1">
+                Nama Customer <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Nama pembeli..."
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#6367FF] font-bold"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase block mb-1">
+                No. Meja
+              </label>
+              <input
+                type="text"
+                placeholder="Nomor meja... (opsional)"
+                value={tableNumber}
+                onChange={(e) => setTableNumber(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#6367FF]"
+              />
+            </div>
           </div>
         </div>
 
@@ -309,6 +375,7 @@ function AppContent() {
   const [customerName, setCustomerName] = useState('');
   const [tableNumber, setTableNumber] = useState('');
   const [orderLoading, setOrderLoading] = useState(false);
+  const [memberInfo, setMemberInfo] = useState<any>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     return localStorage.getItem('sidebar_collapsed') === 'true';
@@ -381,11 +448,28 @@ function AppContent() {
     }
   };
 
+  const handleScanMember = async (cardNumber: string) => {
+    try {
+      const res = await api.get(`/admin/members/search?card_number=${cardNumber}`);
+      if (res.data) {
+        setMemberInfo(res.data);
+        setCustomerName(res.data.name);
+      } else {
+        alert('Member tidak ditemukan');
+      }
+    } catch (err) {
+      console.error('Member search failed:', err);
+      // Fallback: try searching by partial hit or just notify
+      alert('Member tidak ditemukan atau terjadi kesalahan server');
+    }
+  };
+
   const handleCheckout = async () => {
     try {
       setOrderLoading(true);
       const payload = {
         customer_name: customerName,
+        user_id: memberInfo?.id || null, // Link member ID for points!
         table_number: tableNumber,
         payment_method: paymentMethod?.toLowerCase(),
         items: orderItems.map(item => ({
@@ -425,6 +509,7 @@ function AppContent() {
       setTableNumber('');
       setPaymentMethod(null);
       setCashAmount(0);
+      setMemberInfo(null);
     } catch (err: any) {
       console.error('Checkout failed:', err);
       alert('Gagal memproses pesanan: ' + (err.response?.data?.message || err.message));
@@ -475,6 +560,9 @@ function AppContent() {
           setTableNumber={setTableNumber}
           onProceedCheckout={() => setShowPaymentModal(true)}
           loading={orderLoading}
+          onScanMember={handleScanMember}
+          memberInfo={memberInfo}
+          setMemberInfo={setMemberInfo}
         />
       )}
 

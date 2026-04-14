@@ -116,8 +116,8 @@ const MemberDetailPage = () => {
             <div className={`absolute top-0 left-0 w-full h-32 bg-gradient-to-br ${getTierColor(member.tier)} opacity-10`} />
             
             <div className="relative">
-              <div className="w-32 h-32 rounded-full mx-auto mb-6 p-1 bg-white shadow-xl">
-                <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-[#6367FF] font-black text-4xl border-4 border-gray-50">
+              <div className="w-24 h-24 rounded-full mx-auto mb-4 p-1 bg-white shadow-lg">
+                <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-[#6367FF] font-black text-3xl border-4 border-gray-50">
                   {member.avatar ? (
                     <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
                   ) : (
@@ -126,30 +126,42 @@ const MemberDetailPage = () => {
                 </div>
               </div>
 
-              <span className={`px-4 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-widest bg-gradient-to-r ${getTierColor(member.tier)} shadow-lg mb-4 inline-block`}>
-                {member.tier} Member
+              <span className={`px-3 py-1 rounded-lg text-[9px] font-black text-white uppercase tracking-[0.2em] bg-gradient-to-r ${getTierColor(member.tier)} shadow-md mb-3 inline-block`}>
+                {member.tier}
               </span>
               
-              <h2 className="text-2xl font-black text-gray-800 mb-1">{member.name}</h2>
-              <p className="text-gray-400 font-medium text-sm mb-8">{member.email}</p>
+              <h2 className="text-xl font-black text-gray-800 mb-0.5 tracking-tight">{member.name}</h2>
+              <p className="text-gray-400 font-medium text-xs mb-6">{member.email}</p>
 
-              <div className="space-y-4 text-left border-t border-gray-50 pt-8">
-                <div className="flex items-center gap-4 text-gray-600">
-                  <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">
-                    <Phone size={18} />
+              <div className="space-y-3 text-left border-t border-gray-50 pt-6">
+                <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-[#6367FF] shadow-sm border border-gray-100">
+                      <Award size={16} />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Nomor Kartu Member</p>
+                      <p className="font-black text-sm tracking-widest text-[#6367FF] font-mono">{member.card_number || 'BELUM ADA'}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">No. Handphone</p>
-                    <p className="font-bold text-sm tracking-tight">{member.phone || 'Tidak tersedia'}</p>
+                  <div className="flex items-center gap-3 border-t border-gray-100 pt-3">
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-gray-400 shadow-sm border border-gray-100">
+                      <Phone size={16} />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">No. Handphone</p>
+                      <p className="font-bold text-xs tracking-tight text-gray-700">{member.phone || 'Tidak tersedia'}</p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-gray-600">
-                  <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">
-                    <Calendar size={18} />
+
+                <div className="flex items-center gap-3 px-2">
+                  <div className="w-7 h-7 bg-gray-50 rounded-lg flex items-center justify-center text-gray-300">
+                    <Calendar size={14} />
                   </div>
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Bergabung</p>
-                    <p className="font-bold text-sm tracking-tight">{new Date(member.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Joined:</p>
+                    <p className="font-bold text-[11px] text-gray-400">{new Date(member.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                   </div>
                 </div>
               </div>
