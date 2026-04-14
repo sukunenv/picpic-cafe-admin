@@ -33,6 +33,7 @@ export default function LoginPage() {
       localStorage.setItem('picpic_auth_token', token);
       localStorage.setItem('picpic_user', JSON.stringify(user));
       localStorage.setItem('user_role', user.role || 'kasir');
+      localStorage.setItem('token_expires_at', response.data.expires_at);
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Login failed:', err);

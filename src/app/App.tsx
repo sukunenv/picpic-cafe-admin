@@ -348,6 +348,18 @@ function AppContent() {
       }
     } catch {}
   }, []);
+
+  useEffect(() => {
+    const expiresAt = localStorage.getItem('token_expires_at');
+    if (expiresAt && new Date() > new Date(expiresAt)) {
+      localStorage.removeItem('picpic_auth_token');
+      localStorage.removeItem('picpic_user');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('token_expires_at');
+      alert('Sesi kamu telah berakhir, silakan login kembali');
+      window.location.href = '/login';
+    }
+  }, [location.pathname]);
   
   const isAuthenticated = !!localStorage.getItem('picpic_auth_token');
   const location = useLocation();
