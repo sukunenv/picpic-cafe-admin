@@ -119,7 +119,9 @@ function Sidebar({ isCollapsed, onToggle }: { isCollapsed: boolean; onToggle: ()
       <div className={`mt-auto p-4 ${isCollapsed ? 'px-2' : 'p-6'}`}>
         <button 
           onClick={() => {
-            localStorage.removeItem('admin_token');
+            localStorage.removeItem('picpic_auth_token');
+            localStorage.removeItem('picpic_user');
+            localStorage.removeItem('user_role');
             window.location.href = '/login';
           }}
           title={isCollapsed ? 'Logout' : ''}
@@ -347,7 +349,7 @@ function AppContent() {
     } catch {}
   }, []);
   
-  const isAuthenticated = !!localStorage.getItem('admin_token');
+  const isAuthenticated = !!localStorage.getItem('picpic_auth_token');
   const location = useLocation();
 
   const total = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -426,7 +428,7 @@ function AppContent() {
 
   // If already authenticated and on login page, redirect to home
   if (isAuthenticated && location.pathname === '/login') {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (
@@ -437,6 +439,7 @@ function AppContent() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/kasir" element={<KasirPage onAddToOrder={addToOrder} />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/members" element={<ProtectedRoute allowedRoles={['admin', 'owner']}><MembersPage /></ProtectedRoute>} />

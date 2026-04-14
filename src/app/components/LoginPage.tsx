@@ -19,9 +19,10 @@ export default function LoginPage() {
       const response = await api.post('/auth/login', { email, password });
       const { token, user } = response.data;
       
-      localStorage.setItem('admin_token', token);
+      localStorage.setItem('picpic_auth_token', token);
+      localStorage.setItem('picpic_user', JSON.stringify(user));
       localStorage.setItem('user_role', user.role || 'kasir');
-      navigate('/');
+      navigate('/dashboard');
     } catch (err: any) {
       console.error('Login failed:', err);
       if (err.response?.status === 403) {
