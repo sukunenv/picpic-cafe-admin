@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
 import api from '../../lib/api';
@@ -8,7 +8,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let timer: any;
+    if (countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [countdown]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +36,10 @@ export default function LoginPage() {
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Login failed:', err);
-      if (err.response?.status === 403) {
+      if (err.response?.status === 429) {
+        setError('Terlalu banyak percobaan login. Coba lagi dalam 1 menit.');
+        setCountdown(60);
+      } else if (err.response?.status === 403) {
         setError('Akses ditolak! Akun ini bukan akun staff Picpic Cafe.');
       } else {
         setError(
@@ -56,7 +70,14 @@ export default function LoginPage() {
           {error && (
             <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-bold animate-shake">
               <AlertCircle size={18} className="flex-shrink-0" />
-              <span>{error}</span>
+              <span>
+                {error} 
+                {countdown > 0 && (
+                  <span className="ml-1 font-black underline">
+                    {countdown} detik
+                  </span>
+                )}
+              </span>
             </div>
           )}
 
@@ -96,11 +117,13 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-4 bg-[#6367FF] text-white rounded-xl font-black shadow-lg shadow-[#6367FF]/30 hover:bg-[#5558DD] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed uppercase tracking-widest text-sm"
+            disabled={loading || countdown > 0}
+            className="w-full py-4 bg-[#6367FF] text-white rounded-xl font-black shadow-lg shadow-[#6367FF]/30 hover:bg-[#5558DD] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:grayscale disabled:cursor-not-allowed uppercase tracking-widest text-sm"
           >
             {loading ? (
               <Loader2 className="animate-spin" size={20} />
+            ) : countdown > 0 ? (
+              `Tunggu ${countdown}s`
             ) : (
               'Masuk Sekarang'
             )}
