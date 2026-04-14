@@ -432,7 +432,7 @@ export default function MenuPage() {
                             const res = await fetch('https://api.cloudinary.com/v1_1/dkcl8wzdc/image/upload', { method: 'POST', body: data });
                             const result = await res.json();
                             if (result.secure_url) {
-                              const transformedUrl = result.secure_url.replace('/upload/', '/upload/w_500,h_500,c_fill,g_auto,q_auto,f_auto/');
+                              const transformedUrl = result.secure_url.replace('/upload/', '/upload/w_400,h_400,c_fill,q_auto,f_auto/');
                               setFormData(prev => ({ ...prev, image: transformedUrl }));
                             }
                           } catch (err) {
