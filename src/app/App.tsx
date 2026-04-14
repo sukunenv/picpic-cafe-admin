@@ -349,6 +349,9 @@ function AppContent() {
     } catch {}
   }, []);
 
+  const location = useLocation();
+  const isAuthenticated = !!localStorage.getItem('picpic_auth_token');
+
   useEffect(() => {
     const expiresAt = localStorage.getItem('token_expires_at');
     if (expiresAt && new Date() > new Date(expiresAt)) {
@@ -360,9 +363,6 @@ function AppContent() {
       window.location.href = '/login';
     }
   }, [location.pathname]);
-  
-  const isAuthenticated = !!localStorage.getItem('picpic_auth_token');
-  const location = useLocation();
 
   const total = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const changeAmount = cashAmount - total;
