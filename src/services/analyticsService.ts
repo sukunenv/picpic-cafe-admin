@@ -6,6 +6,14 @@ export interface AnalyticsSummary {
   avg_order_value: number;
 }
 
+// Real-time stats specifically for the operational dashboard (kasir view)
+export interface DashboardLiveSummary {
+  total_orders_today: number;
+  pending_orders: number;
+  today_revenue: number;
+  incomplete_orders: number;
+}
+
 export interface ChartData {
   date: string;
   revenue: number;
@@ -30,6 +38,11 @@ export interface PeakHourData {
 }
 
 export const analyticsService = {
+  getDashboardLive: async () => {
+    const response = await api.get('/analytics/dashboard-stats');
+    return response.data as DashboardLiveSummary;
+  },
+
   getSummary: async (period: string = 'Today') => {
     const response = await api.get(`/analytics/summary?period=${encodeURIComponent(period)}`);
     return response.data as AnalyticsSummary;

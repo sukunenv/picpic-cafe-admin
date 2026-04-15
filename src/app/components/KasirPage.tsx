@@ -62,7 +62,8 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
         description: item.description,
         price: item.price,
         image: item.image || '/logo.png',
-        category: item.category?.name || 'Lainnya'
+        category: item.category?.name || 'Lainnya',
+        is_available: item.is_available
       }));
 
       setMenuItems(mappedMenus);
@@ -108,9 +109,10 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const filteredMenu = activeCategory === 'all'
-    ? menuItems
-    : menuItems.filter(item => item.category === activeCategory);
+  const filteredMenu = menuItems.filter(item => {
+    if (!item.is_available) return false;
+    return activeCategory === 'all' ? true : item.category === activeCategory;
+  });
 
   const totalPages = Math.ceil(filteredMenu.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;

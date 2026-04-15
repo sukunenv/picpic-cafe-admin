@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ShoppingCart, Clock, TrendingUp, AlertCircle, Loader2, RefreshCcw } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../../lib/api';
-import { analyticsService, AnalyticsSummary } from '../../services/analyticsService';
+import { analyticsService, DashboardLiveSummary } from '../../services/analyticsService';
 
 interface Order {
   id: string;
@@ -16,7 +16,7 @@ interface Order {
 
 export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
+  const [summary, setSummary] = useState<DashboardLiveSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
@@ -25,7 +25,7 @@ export default function DashboardPage() {
     try {
       const [ordersRes, summaryData] = await Promise.all([
         api.get('/orders?per_page=100'),
-        analyticsService.getSummary(),
+        analyticsService.getDashboardLive(),
       ]);
 
       const data = Array.isArray(ordersRes.data) ? ordersRes.data : ordersRes.data.data;
@@ -85,16 +85,16 @@ export default function DashboardPage() {
 
   // Hourly chart — count ALL orders today per jam (full 24h to avoid missing early-morning orders)
   const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
   const hourlyCount: Record<string, number> = {};
-  for (let i = 15; i <= 23; i++) {
+  for (let i = 0; i <= 23; i++) {
     hourlyCount[`${i.toString().padStart(2, '0')}:00`] = 0;
   }
-  
+
   orders.forEach(order => {
     const orderDate = new Date(order.created_at);
-    const orderLocalStr = `${orderDate.getFullYear()}-${String(orderDate.getMonth()+1).padStart(2,'0')}-${String(orderDate.getDate()).padStart(2,'0')}`;
+    const orderLocalStr = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}-${String(orderDate.getDate()).padStart(2, '0')}`;
     const hour = `${orderDate.getHours().toString().padStart(2, '0')}:00`;
     if (orderLocalStr === todayStr && hourlyCount[hour] !== undefined) {
       hourlyCount[hour] += 1;
@@ -149,15 +149,15 @@ export default function DashboardPage() {
         {/* Total Order */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-50 p-5 hover:shadow-md transition-all group">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Total Order</span>
+            <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Total Order Hari Ini</span>
             <div className="w-10 h-10 rounded-xl bg-[#6367FF]/10 flex items-center justify-center group-hover:bg-[#6367FF]/20 transition-all">
               <ShoppingCart size={20} className="text-[#6367FF]" />
             </div>
           </div>
-          <p className="font-black text-3xl text-gray-800">{summary?.total_orders ?? 0}</p>
+          <p className="font-black text-3xl text-gray-800">{summary?.total_orders_today ?? 0}</p>
           <div className="flex items-center gap-1.5 mt-2">
             <span className="text-[10px] font-bold bg-[#6367FF]/10 text-[#6367FF] px-2 py-0.5 rounded-full">
-              Hari ini: {summary?.today_orders ?? 0}
+              Termasuk pending & lunas
             </span>
           </div>
         </div>
@@ -165,21 +165,21 @@ export default function DashboardPage() {
         {/* Pending */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-50 p-5 hover:shadow-md transition-all group">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Pending</span>
+            <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Pending (Dapur)</span>
             <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-all">
               <Clock size={20} className="text-amber-600" />
             </div>
           </div>
           <p className="font-black text-3xl text-amber-600">{summary?.pending_orders ?? 0}</p>
           <div className="flex items-center gap-1.5 mt-2">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Perlu diproses segera</span>
+            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">Perlu diproses segera</span>
           </div>
         </div>
 
         {/* Pendapatan */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-50 p-5 hover:shadow-md transition-all group">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Pendapatan Hari Ini</span>
+            <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Pendapatan Lunas</span>
             <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center group-hover:bg-green-200 transition-all">
               <TrendingUp size={20} className="text-green-600" />
             </div>
@@ -189,7 +189,7 @@ export default function DashboardPage() {
           </p>
           <div className="flex items-center gap-1.5 mt-2">
             <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-              Lunas: {summary?.completed_orders ?? 0} order
+              Hanya pesanan selesai/dibayar
             </span>
           </div>
         </div>
@@ -197,15 +197,15 @@ export default function DashboardPage() {
         {/* Belum Lunas */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-50 p-5 hover:shadow-md transition-all group">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Belum Lunas</span>
+            <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Belum Tuntas</span>
             <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center group-hover:bg-red-200 transition-all">
               <AlertCircle size={20} className="text-red-600" />
             </div>
           </div>
-          <p className="font-black text-3xl text-red-600">{summary?.pending_orders ?? 0}</p>
+          <p className="font-black text-3xl text-red-600">{summary?.incomplete_orders ?? 0}</p>
           <div className="flex items-center gap-1.5 mt-2">
             <span className="text-[10px] font-bold bg-red-50 text-red-600 px-2 py-0.5 rounded-full uppercase tracking-tighter">
-              Butuh konfirmasi
+              Order aktif/belum dibayar
             </span>
           </div>
         </div>
