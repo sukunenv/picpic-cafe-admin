@@ -39,6 +39,7 @@ interface MenuItem {
   description: string;
   image: string;
   is_available: boolean;
+  is_featured: boolean;
   variants?: { name: string; price: number }[];
 }
 
@@ -60,7 +61,8 @@ export default function MenuPage() {
     price: '',
     description: '',
     image: '',
-    is_available: true
+    is_available: true,
+    is_featured: false
   });
   const [variants, setVariants] = useState<{ name: string; price: string }[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -98,7 +100,8 @@ export default function MenuPage() {
         price: menu.price.toString(),
         description: menu.description || '',
         image: menu.image || '',
-        is_available: menu.is_available
+        is_available: menu.is_available,
+        is_featured: menu.is_featured || false
       });
       setVariants(menu.variants ? menu.variants.map(v => ({ name: v.name, price: String(v.price) })) : []);
     } else {
@@ -109,7 +112,8 @@ export default function MenuPage() {
         price: '',
         description: '',
         image: '',
-        is_available: true
+        is_available: true,
+        is_featured: false
       });
       setVariants([]);
     }
@@ -532,6 +536,26 @@ export default function MenuPage() {
                       </button>
                       <span className="text-[10px] font-black text-gray-600 uppercase">
                         {formData.is_available ? 'Ready Stock' : 'Out of Stock'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Menu Populer</label>
+                    <div className="flex items-center gap-3 py-3 px-4 bg-gray-50 border border-gray-100 rounded-xl h-28 flex-col justify-center text-center">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, is_featured: !formData.is_featured })}
+                        className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${
+                          formData.is_featured ? 'bg-[#6367FF]' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                          formData.is_featured ? 'translate-x-6' : 'translate-x-0.5'
+                        }`} />
+                      </button>
+                      <span className="text-[10px] font-black text-gray-600 uppercase">
+                        {formData.is_featured ? 'Tampil di Populer' : 'Biasa'}
                       </span>
                     </div>
                   </div>
