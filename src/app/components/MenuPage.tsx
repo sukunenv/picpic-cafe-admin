@@ -39,6 +39,7 @@ interface MenuItem {
   description: string;
   image: string;
   is_available: boolean;
+  variants?: { name: string; price: number }[];
 }
 
 export default function MenuPage() {
@@ -61,6 +62,7 @@ export default function MenuPage() {
     image: '',
     is_available: true
   });
+  const [variants, setVariants] = useState<{ name: string; price: string }[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -98,6 +100,7 @@ export default function MenuPage() {
         image: menu.image || '',
         is_available: menu.is_available
       });
+      setVariants(menu.variants ? menu.variants.map(v => ({ name: v.name, price: String(v.price) })) : []);
     } else {
       setCurrentMenu(null);
       setFormData({
@@ -108,6 +111,7 @@ export default function MenuPage() {
         image: '',
         is_available: true
       });
+      setVariants([]);
     }
     setIsModalOpen(true);
   };
@@ -115,6 +119,7 @@ export default function MenuPage() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setCurrentMenu(null);
+    setVariants([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -133,8 +138,14 @@ export default function MenuPage() {
 
     const payload = {
       ...formData,
-      price: Number(formData.price),
-      is_available: formData.is_available
+      price: variants.length > 0 ? 0 : Number(formData.price),
+      is_available: formData.is_available,
+      ...(variants.length > 0 && {
+        variants: variants.map(v => ({
+          name: v.name,
+          price: Number(v.price)
+        }))
+      })
     };
 
     try {
@@ -368,12 +379,72 @@ export default function MenuPage() {
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Harga (IDR)</label>
                     <input
                       type="number"
-                      required
-                      value={formData.price}
+                      required={variants.length === 0}
+                      disabled={variants.length > 0}
+                      value={variants.length > 0 ? 0 : formData.price}
                       onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:border-[#6367FF] transition-all font-bold text-sm"
+                      className={`w-full px-4 py-2.5 border border-gray-100 rounded-xl focus:outline-none focus:border-[#6367FF] transition-all font-bold text-sm ${variants.length > 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-50'}`}
                       placeholder="35000"
                     />
+                  </div>
+
+                  {/* Baris Tambahan: Varian Menu (Full Width) */}
+                  <div className="md:col-span-2 space-y-3 pt-2 border-t border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Varian Menu</label>
+                      <button
+                        type="button"
+                        onClick={() => setVariants([...variants, { name: '', price: '' }])}
+                        className="text-[10px] font-black text-[#6367FF] bg-[#6367FF]/10 px-3 py-1.5 rounded-lg hover:bg-[#6367FF]/20 transition-colors flex items-center gap-1"
+                      >
+                        <Plus size={12} /> Tambah Varian
+                      </button>
+                    </div>
+                    
+                    {variants.length > 0 ? (
+                      <div className="space-y-2">
+                        {variants.map((variant, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              required
+                              value={variant.name}
+                              onChange={(e) => {
+                                const newVariants = [...variants];
+                                newVariants[idx].name = e.target.value;
+                                setVariants(newVariants);
+                              }}
+                              className="flex-1 px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#6367FF] transition-all font-bold text-sm"
+                              placeholder="Nama Varian (mis: Coffee Pic)"
+                            />
+                            <input
+                              type="number"
+                              required
+                              value={variant.price}
+                              onChange={(e) => {
+                                const newVariants = [...variants];
+                                newVariants[idx].price = e.target.value;
+                                setVariants(newVariants);
+                              }}
+                              className="w-1/3 px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#6367FF] transition-all font-bold text-sm"
+                              placeholder="Harga"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newVariants = variants.filter((_, i) => i !== idx);
+                                setVariants(newVariants);
+                              }}
+                              className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                            >
+                              <X size={18} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-gray-400 italic ml-1">Tidak ada varian. Harga menggunakan harga utama.</p>
+                    )}
                   </div>
 
                   {/* Baris 3: Deskripsi (Full Width) */}

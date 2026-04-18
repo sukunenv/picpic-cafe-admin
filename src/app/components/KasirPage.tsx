@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Search, ChevronLeft, ChevronRight, Loader2, AlertCircle,
+  Search, ChevronLeft, ChevronRight, Loader2, AlertCircle, X,
   LayoutGrid, Coffee, UtensilsCrossed, Croissant, IceCream2, Cookie, Soup, Droplets, Sandwich, GlassWater
 } from 'lucide-react';
 import api from '../../lib/api';
@@ -18,10 +18,11 @@ interface MenuItem {
   price: number;
   image: string;
   category: string;
+  variants?: any[];
 }
 
 interface KasirPageProps {
-  onAddToOrder: (item: MenuItem, notes: string) => void;
+  onAddToOrder: (item: any, notes: string) => void;
 }
 
 export default function KasirPage({ onAddToOrder }: KasirPageProps) {
@@ -32,6 +33,10 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [variantModal, setVariantModal] = useState<{
+    open: boolean;
+    menu: any | null;
+  }>({ open: false, menu: null });
   const [categories, setCategories] = useState<Category[]>([
     { id: 'all', name: 'Semua', icon: LayoutGrid }
   ]);
@@ -63,7 +68,8 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
         price: item.price,
         image: item.image || '/logo.png',
         category: item.category?.name || 'Lainnya',
-        is_available: item.is_available
+        is_available: item.is_available,
+        variants: item.variants || []
       }));
 
       setMenuItems(mappedMenus);
@@ -120,8 +126,25 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
   const currentItems = filteredMenu.slice(indexOfFirstItem, indexOfLastItem);
 
   const handleAddToOrder = (item: MenuItem) => {
-    onAddToOrder(item, itemNotes[item.id] || '');
-    setItemNotes({ ...itemNotes, [item.id]: '' });
+    if (item.variants && item.variants.length > 0) {
+      setVariantModal({ open: true, menu: item });
+    } else {
+      onAddToOrder({ ...item, variant_id: null }, itemNotes[item.id] || '');
+      setItemNotes({ ...itemNotes, [item.id]: '' });
+    }
+  };
+
+  const handleSelectVariant = (variant: any) => {
+    if (variantModal.menu) {
+      onAddToOrder({
+        ...variantModal.menu,
+        variant_id: variant.id,
+        variant_name: variant.name,
+        price: variant.price,
+      }, itemNotes[variantModal.menu.id] || '');
+      setItemNotes({ ...itemNotes, [variantModal.menu.id]: '' });
+    }
+    setVariantModal({ open: false, menu: null });
   };
 
   const handleCategoryChange = (id: string) => {
@@ -219,7 +242,10 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
               </div>
               <div className="flex items-center justify-between mb-3">
                 <p className="font-black text-sm text-[#6367FF]">
-                  {formatPrice(item.price)}
+                  {item.variants && item.variants.length > 0 ? (
+                    <span className="text-xs text-gray-500 mr-1 font-normal">Mulai dari</span>
+                  ) : null}
+                  {formatPrice(item.variants && item.variants.length > 0 ? Math.min(...item.variants.map(v => v.price)) : item.price)}
                 </p>
               </div>
               <div className="space-y-2">
@@ -270,6 +296,57 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
           >
             <ChevronRight size={20} />
           </button>
+        </div>
+      )}
+
+      {/* Variant Modal */}
+      {variantModal.open && variantModal.menu && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setVariantModal({ open: false, menu: null })}
+          />
+          <div className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden relative z-10 animate-in zoom-in duration-300">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-white">
+              <div>
+                <h2 className="text-lg font-black text-gray-800 uppercase tracking-tight">
+                  {variantModal.menu.name}
+                </h2>
+                <p className="text-xs text-gray-500 font-bold">Pilih varian</p>
+              </div>
+              <button onClick={() => setVariantModal({ open: false, menu: null })} className="p-2 hover:bg-gray-50 rounded-xl transition-all">
+                <X size={20} className="text-gray-400" />
+              </button>
+            </div>
+            
+            <div className="p-5 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-3">
+                {variantModal.menu.variants?.map((variant: any) => (
+                  <button
+                    key={variant.id}
+                    onClick={() => handleSelectVariant(variant)}
+                    className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-gray-100 hover:border-[#6367FF] hover:bg-[#6367FF]/5 transition-all text-left group"
+                  >
+                    <span className="font-bold text-sm text-gray-700 group-hover:text-[#6367FF]">
+                      {variant.name}
+                    </span>
+                    <span className="font-black text-sm text-[#6367FF]">
+                      {formatPrice(variant.price)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-gray-100 bg-white">
+              <button
+                onClick={() => setVariantModal({ open: false, menu: null })}
+                className="w-full py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-50 transition-all"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

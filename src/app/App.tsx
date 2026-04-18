@@ -37,6 +37,12 @@ import AccessDenied from './components/AccessDenied';
 import { Navigate } from 'react-router';
 import api from '../lib/api';
 
+interface Variant {
+  id: number;
+  name: string;
+  price: number;
+}
+
 interface MenuItem {
   id: string;
   name: string;
@@ -44,11 +50,14 @@ interface MenuItem {
   price: number;
   image: string;
   category: string;
+  variants?: Variant[];
 }
 
 interface OrderItem extends MenuItem {
   quantity: number;
   notes: string;
+  variant_id?: number | null;
+  variant_name?: string | null;
 }
 
 function Sidebar({ isCollapsed, onToggle }: { isCollapsed: boolean; onToggle: () => void }) {
@@ -293,6 +302,11 @@ function RightPanel({
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold truncate">{item.name}</p>
+                  {item.variant_name && (
+                    <p className="text-[10px] font-bold text-[#6367FF] bg-[#6367FF]/10 inline-block px-2 py-0.5 rounded-full mt-0.5 mb-1">
+                      {item.variant_name}
+                    </p>
+                  )}
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-500">{item.quantity}x</span>
                     {item.notes && (
@@ -434,17 +448,23 @@ function AppContent() {
   const total = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const changeAmount = cashAmount - total;
 
-  const addToOrder = (item: MenuItem, notes: string) => {
-    const existingItem = orderItems.find(oi => oi.id === item.id && oi.notes === notes);
+  const addToOrder = (item: any, notes: string) => {
+    const existingItemIndex = orderItems.findIndex(
+      oi => oi.id === item.id && oi.notes === notes && oi.variant_id === (item.variant_id ?? null)
+    );
 
-    if (existingItem) {
-      setOrderItems(orderItems.map(oi =>
-        oi.id === item.id && oi.notes === notes
-          ? { ...oi, quantity: oi.quantity + 1 }
-          : oi
-      ));
+    if (existingItemIndex >= 0) {
+      const newOrderItems = [...orderItems];
+      newOrderItems[existingItemIndex].quantity += 1;
+      setOrderItems(newOrderItems);
     } else {
-      setOrderItems([...orderItems, { ...item, quantity: 1, notes }]);
+      setOrderItems([...orderItems, { 
+        ...item, 
+        quantity: 1, 
+        notes,
+        variant_id: item.variant_id ?? null,
+        variant_name: item.variant_name ?? null
+      }]);
     }
   };
 
@@ -474,9 +494,10 @@ function AppContent() {
         payment_method: paymentMethod?.toLowerCase(),
         items: orderItems.map(item => ({
           menu_id: parseInt(item.id),
+          variant_id: item.variant_id ?? null,
           quantity: item.quantity,
           price: item.price,
-          notes: item.notes
+          notes: item.notes ?? ''
         }))
       };
 
