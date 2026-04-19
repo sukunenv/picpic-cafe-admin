@@ -418,7 +418,7 @@ export default function OrdersPage() {
             customer_name: selectedOrder.customer_name,
             table_number: selectedOrder.table_number,
             items: (selectedOrder.orderItems || selectedOrder.order_items || []).map(item => ({
-              name: item.menu.name,
+              name: item.variant?.name ? `${item.menu.name} - ${item.variant.name}` : item.menu.name,
               quantity: item.quantity,
               price: item.price,
               type: (item as any).menu?.category?.type || 'food', // Fallback to food if missing

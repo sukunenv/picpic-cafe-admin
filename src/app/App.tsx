@@ -579,7 +579,7 @@ function AppContent() {
         customer_name: customerName,
         table_number: tableNumber,
         items: orderItems.map(item => ({
-          name: item.name,
+          name: item.variant_name ? `${item.name} - ${item.variant_name}` : item.name,
           quantity: item.quantity,
           price: item.price,
           type: item.category_type || 'food',
@@ -602,7 +602,7 @@ function AppContent() {
 
       // Cleanup & Next Step
       setShowPaymentModal(false);
-      setShowSuccessModal(true);
+      setShowReceiptModal(true); // Direct to receipt modal for POS
       
       // Reset Order State
       setOrderItems([]);
