@@ -17,20 +17,23 @@ interface Order {
 export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [summary, setSummary] = useState<DashboardLiveSummary | null>(null);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const fetchDashboardData = useCallback(async () => {
     try {
-      const [ordersRes, summaryData] = await Promise.all([
-        api.get('/orders?per_page=100'),
+      const [ordersRes, summaryData, chartRes] = await Promise.all([
+        api.get('/orders?per_page=10'), // Only need a few for the table
         analyticsService.getDashboardLive(),
+        analyticsService.getChartData('Today')
       ]);
 
       const data = Array.isArray(ordersRes.data) ? ordersRes.data : ordersRes.data.data;
       setOrders(data || []);
       setSummary(summaryData);
+      setChartData(chartRes || []);
       setError(null);
       setLastUpdated(new Date());
     } catch (err) {
@@ -83,25 +86,11 @@ export default function DashboardPage() {
     );
   }
 
-  // Hourly chart — count ALL orders today per jam (full 24h to avoid missing early-morning orders)
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
-  const hourlyCount: Record<string, number> = {};
-  for (let i = 0; i <= 23; i++) {
-    hourlyCount[`${i.toString().padStart(2, '0')}:00`] = 0;
-  }
-
-  orders.forEach(order => {
-    const orderDate = new Date(order.created_at);
-    const orderLocalStr = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}-${String(orderDate.getDate()).padStart(2, '0')}`;
-    const hour = `${orderDate.getHours().toString().padStart(2, '0')}:00`;
-    if (orderLocalStr === todayStr && hourlyCount[hour] !== undefined) {
-      hourlyCount[hour] += 1;
-    }
-  });
-
-  const chartData = Object.entries(hourlyCount).map(([hour, count]) => ({ hour, orders: count }));
+  // Chart data is now fetched directly from backend to ensure accuracy - ISSUE 5
+  const formattedChartData = chartData.map(d => ({
+    hour: d.date,
+    orders: d.orders
+  }));
 
   const recentOrders = orders.slice(0, 8);
 
@@ -224,7 +213,7 @@ export default function DashboardPage() {
           </div>
         </div>
         <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={chartData}>
+          <BarChart data={formattedChartData}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
             <XAxis
               dataKey="hour"

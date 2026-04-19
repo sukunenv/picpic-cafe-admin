@@ -40,6 +40,7 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
   const [categories, setCategories] = useState<Category[]>([
     { id: 'all', name: 'Semua', icon: LayoutGrid }
   ]);
+  const [search, setSearch] = useState('');
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -68,6 +69,7 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
         price: item.price,
         image: item.image || '/logo.png',
         category: item.category?.name || 'Lainnya',
+        category_type: item.category?.type || 'food',
         is_available: item.is_available,
         variants: item.variants || []
       }));
@@ -117,7 +119,9 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
 
   const filteredMenu = menuItems.filter(item => {
     if (!item.is_available) return false;
-    return activeCategory === 'all' ? true : item.category === activeCategory;
+    const matchesCategory = activeCategory === 'all' ? true : item.category === activeCategory;
+    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
+    return matchesCategory && matchesSearch;
   });
 
   const totalPages = Math.ceil(filteredMenu.length / itemsPerPage);
@@ -188,6 +192,8 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
           <input
             type="text"
             placeholder="Cari menu..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-3 bg-white border border-gray-100 rounded-xl focus:outline-none focus:border-[#6367FF] shadow-sm transition-all text-sm"
           />
         </div>
@@ -220,48 +226,71 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
         </span>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-4">
         {currentItems.map(item => (
-          <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all group">
-            <div className="relative">
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute top-2 right-2">
-                <span className="px-2 py-1 bg-white/90 backdrop-blur-sm text-[10px] font-bold rounded-lg shadow-sm">
-                  {item.category}
-                </span>
-              </div>
-            </div>
-            <div className="p-3">
+          <div key={item.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all group flex flex-col">
+            {/* Image removed for compact mode - ISSUE 6 */}
+            <div className="p-3 flex-1 flex flex-col">
               <div className="mb-2">
-                <h3 className="font-bold text-sm text-gray-800 truncate mb-0.5">{item.name}</h3>
-                <p className="text-[10px] text-gray-500 line-clamp-2 min-h-[2.5rem]">{item.description}</p>
+                <div className="flex items-start justify-between gap-1 mb-1">
+                   <h3 className="font-bold text-[13px] text-gray-800 leading-tight">{item.name}</h3>
+                   <span className="text-[8px] font-black bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded uppercase flex-shrink-0">
+                      {item.category}
+                   </span>
+                </div>
+                <p className="text-[9px] text-gray-400 line-clamp-1">{item.description}</p>
               </div>
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-black text-sm text-[#6367FF]">
+              
+              <div className="mt-auto">
+                <p className="font-black text-sm text-[#6367FF] mb-2">
                   {item.variants && item.variants.length > 0 ? (
-                    <span className="text-xs text-gray-500 mr-1 font-normal">Mulai dari</span>
-                  ) : null}
-                  {formatPrice(item.variants && item.variants.length > 0 ? Math.min(...item.variants.map(v => v.price)) : item.price)}
+                    formatPrice(Math.min(...item.variants.map(v => v.price)))
+                  ) : formatPrice(item.price)}
                 </p>
-              </div>
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  placeholder="Catatan..."
-                  value={itemNotes[item.id] || ''}
-                  onChange={(e) => setItemNotes({ ...itemNotes, [item.id]: e.target.value })}
-                  className="w-full px-3 py-2 text-[10px] border border-gray-100 bg-gray-50 rounded-lg focus:outline-none focus:border-[#6367FF] focus:bg-white transition-all"
-                />
-                <button
-                  onClick={() => handleAddToOrder(item)}
-                  className="w-full py-2.5 text-xs font-bold bg-[#6367FF] text-white rounded-xl hover:bg-[#5558DD] active:scale-[0.98] transition-all shadow-md shadow-[#6367FF]/20"
-                >
-                  Tambah
-                </button>
+
+                {/* Variant dropdown for quick selection if multiple - ISSUE 6 */}
+                {item.variants && item.variants.length > 0 && (
+                  <div className="mb-2">
+                    <select 
+                      className="w-full text-[10px] bg-gray-50 border border-gray-100 rounded-lg px-2 py-1.5 outline-none focus:border-[#6367FF]"
+                      onChange={(e) => {
+                        const v = item.variants?.find(v => v.id.toString() === e.target.value);
+                        if (v) {
+                          onAddToOrder({
+                            ...item,
+                            variant_id: v.id,
+                            variant_name: v.name,
+                            price: v.price,
+                          }, itemNotes[item.id] || '');
+                        }
+                      }}
+                      defaultValue=""
+                    >
+                      <option value="" disabled>Pilih Varian...</option>
+                      {item.variants.map(v => (
+                        <option key={v.id} value={v.id}>{v.name} - {formatPrice(v.price)}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <input
+                    type="text"
+                    placeholder="Catatan..."
+                    value={itemNotes[item.id] || ''}
+                    onChange={(e) => setItemNotes({ ...itemNotes, [item.id]: e.target.value })}
+                    className="w-full px-2 py-1.5 text-[9px] border border-gray-50 bg-gray-50/50 rounded-lg focus:outline-none focus:border-[#6367FF] focus:bg-white transition-all"
+                  />
+                  {(!item.variants || item.variants.length === 0) && (
+                    <button
+                      onClick={() => handleAddToOrder(item)}
+                      className="w-full py-2 text-[11px] font-black bg-[#6367FF] text-white rounded-lg hover:bg-[#5558DD] active:scale-[0.98] transition-all"
+                    >
+                      TAMBAH
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

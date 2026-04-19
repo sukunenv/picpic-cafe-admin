@@ -58,6 +58,7 @@ interface OrderItem extends MenuItem {
   notes: string;
   variant_id?: number | null;
   variant_name?: string | null;
+  category_type?: string;
 }
 
 function Sidebar({ isCollapsed, onToggle }: { isCollapsed: boolean; onToggle: () => void }) {
@@ -161,6 +162,10 @@ function RightPanel({
   onScanMember,
   memberInfo,
   setMemberInfo,
+  onUpdateQuantity,
+  onRemoveItem,
+  isSoftOpening,
+  setIsSoftOpening,
 }: {
   orderItems: OrderItem[];
   paymentMethod: 'Cash' | 'QRIS' | 'Transfer' | null;
@@ -174,9 +179,14 @@ function RightPanel({
   onScanMember: (cardNumber: string) => void;
   memberInfo: any;
   setMemberInfo: (info: any) => void;
+  onUpdateQuantity: (index: number, delta: number) => void;
+  onRemoveItem: (index: number) => void;
+  isSoftOpening: boolean;
+  setIsSoftOpening: (val: boolean) => void;
 }) {
   const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const total = subtotal;
+  const discountAmount = isSoftOpening ? Math.round(subtotal * 0.25) : 0;
+  const total = subtotal - discountAmount;
 
   const [scanInput, setScanInput] = useState('');
   const [isScanning, setIsScanning] = useState(false);
@@ -294,30 +304,52 @@ function RightPanel({
             <p className="text-sm text-gray-400 text-center py-8">Belum ada pesanan</p>
           ) : (
             orderItems.map((item, index) => (
-              <div key={`${item.id}-${index}`} className="flex gap-3">
+              <div key={`${item.id}-${index}`} className="flex gap-3 bg-gray-50/50 p-2 rounded-2xl border border-gray-50 group">
                 <img
                   src={item.image}
                   alt={item.name}
-                  className="w-12 h-12 rounded-lg object-cover"
+                  className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate">{item.name}</p>
+                  <div className="flex justify-between items-start">
+                    <p className="text-sm font-bold truncate pr-1">{item.name}</p>
+                    <button 
+                      onClick={() => onRemoveItem(index)}
+                      className="text-gray-300 hover:text-red-500 transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
                   {item.variant_name && (
-                    <p className="text-[10px] font-bold text-[#6367FF] bg-[#6367FF]/10 inline-block px-2 py-0.5 rounded-full mt-0.5 mb-1">
+                    <p className="text-[9px] font-bold text-[#6367FF] bg-[#6367FF]/5 inline-block px-2 py-0.5 rounded-full mt-0.5">
                       {item.variant_name}
                     </p>
                   )}
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">{item.quantity}x</span>
-                    {item.notes && (
-                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
-                        {item.notes}
-                      </span>
-                    )}
+                  <div className="flex items-center justify-between mt-1.5">
+                    <div className="flex items-center bg-white border border-gray-100 rounded-lg p-1">
+                      <button 
+                        onClick={() => onUpdateQuantity(index, -1)}
+                        className="w-6 h-6 flex items-center justify-center hover:bg-gray-50 rounded text-gray-500"
+                      >
+                        -
+                      </button>
+                      <span className="w-8 text-center text-xs font-black">{item.quantity}</span>
+                      <button 
+                        onClick={() => onUpdateQuantity(index, 1)}
+                        className="w-6 h-6 flex items-center justify-center hover:bg-gray-50 rounded text-gray-500"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <p className="text-sm font-black text-[#6367FF]">
+                      Rp {(item.price * item.quantity).toLocaleString('id-ID')}
+                    </p>
                   </div>
-                  <p className="text-sm font-bold text-[#6367FF]">
-                    Rp {(item.price * item.quantity).toLocaleString('id-ID')}
-                  </p>
+                  {item.notes && (
+                    <p className="text-[10px] text-amber-600 font-medium mt-1 truncate">
+                      "{item.notes}"
+                    </p>
+                  )}
                 </div>
               </div>
             ))
@@ -326,15 +358,28 @@ function RightPanel({
 
         {orderItems.length > 0 && (
           <>
-            <div className="border-t border-gray-200 pt-4 mb-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Subtotal</span>
+            <div className="border-t border-gray-100 pt-4 mb-4 space-y-2">
+              <div className="flex justify-between text-xs font-bold text-gray-400">
+                <span className="uppercase">Subtotal</span>
                 <span>Rp {subtotal.toLocaleString('id-ID')}</span>
               </div>
 
-              <div className="flex justify-between font-bold">
-                <span>Total</span>
-                <span className="text-[#6367FF]">Rp {total.toLocaleString('id-ID')}</span>
+              {/* TODO: REMOVE AFTER SOFT OPENING - ISSUE 8 */}
+              <div className="flex items-center justify-between py-1 px-3 bg-green-50 rounded-xl border border-green-100">
+                <div className="flex items-center gap-2">
+                   <div className={`w-8 h-4 rounded-full relative transition-colors ${isSoftOpening ? 'bg-green-500' : 'bg-gray-300'}`} onClick={() => setIsSoftOpening(!isSoftOpening)}>
+                      <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${isSoftOpening ? 'left-4.5' : 'left-0.5'}`} />
+                   </div>
+                   <span className="text-[10px] font-black text-green-700 uppercase">Disc Soft Opening 25%</span>
+                </div>
+                {isSoftOpening && (
+                   <span className="text-[10px] font-black text-green-600">-Rp {discountAmount.toLocaleString('id-ID')}</span>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-sm font-black text-gray-800 uppercase">Total Tagihan</span>
+                <span className="text-xl font-black text-[#6367FF]">Rp {total.toLocaleString('id-ID')}</span>
               </div>
             </div>
 
@@ -395,12 +440,32 @@ function AppContent() {
     return localStorage.getItem('sidebar_collapsed') === 'true';
   });
 
+  const [isSoftOpening, setIsSoftOpening] = useState(() => {
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+    return today >= '2026-04-19' && today <= '2026-04-24';
+  });
+
   const toggleSidebar = () => {
     setIsSidebarCollapsed(prev => {
       const next = !prev;
       localStorage.setItem('sidebar_collapsed', String(next));
       return next;
     });
+  };
+
+  const updateQuantity = (index: number, delta: number) => {
+    const newItems = [...orderItems];
+    newItems[index].quantity += delta;
+    if (newItems[index].quantity <= 0) {
+      newItems.splice(index, 1);
+    }
+    setOrderItems(newItems);
+  };
+
+  const removeFromOrder = (index: number) => {
+    const newItems = [...orderItems];
+    newItems.splice(index, 1);
+    setOrderItems(newItems);
   };
   
   // Payment Modal States
@@ -445,7 +510,9 @@ function AppContent() {
     }
   }, [location.pathname]);
 
-  const total = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const discountAmount = isSoftOpening ? Math.round(subtotal * 0.25) : 0;
+  const total = subtotal - discountAmount;
   const changeAmount = cashAmount - total;
 
   const addToOrder = (item: any, notes: string) => {
@@ -463,7 +530,8 @@ function AppContent() {
         quantity: 1, 
         notes,
         variant_id: item.variant_id ?? null,
-        variant_name: item.variant_name ?? null
+        variant_name: item.variant_name ?? null,
+        category_type: item.category_type || 'food'
       }]);
     }
   };
@@ -492,6 +560,7 @@ function AppContent() {
         user_id: memberInfo?.id || null, // Link member ID for points!
         table_number: tableNumber,
         payment_method: paymentMethod?.toLowerCase(),
+        is_soft_opening: isSoftOpening,
         items: orderItems.map(item => ({
           menu_id: parseInt(item.id),
           variant_id: item.variant_id ?? null,
@@ -512,12 +581,23 @@ function AppContent() {
         items: orderItems.map(item => ({
           name: item.name,
           quantity: item.quantity,
-          price: item.price
+          price: item.price,
+          type: item.category_type || 'food',
+          notes: item.notes
         })),
+        subtotal: subtotal,
+        discount: discountAmount,
         total: total,
         method: paymentMethod || '',
         change: paymentMethod === 'Cash' ? changeAmount : 0,
-        date: new Date().toLocaleString('id-ID')
+        date: new Date().toLocaleString('id-ID', { 
+          weekday: 'long', 
+          day: 'numeric', 
+          month: 'short', 
+          year: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }) + ' WIB'
       });
 
       // Cleanup & Next Step
@@ -584,6 +664,10 @@ function AppContent() {
           onScanMember={handleScanMember}
           memberInfo={memberInfo}
           setMemberInfo={setMemberInfo}
+          onUpdateQuantity={updateQuantity}
+          onRemoveItem={removeFromOrder}
+          isSoftOpening={isSoftOpening}
+          setIsSoftOpening={setIsSoftOpening}
         />
       )}
 

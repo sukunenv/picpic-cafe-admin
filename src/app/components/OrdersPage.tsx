@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Loader2, ListOrdered, CheckCircle2, Eye, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, ListOrdered, CheckCircle2, Eye, X, Printer } from 'lucide-react';
 import api from '../../lib/api';
+import ReceiptModal from './ReceiptModal';
 
 interface OrderItem {
   id: number;
@@ -19,6 +20,9 @@ interface Order {
   order_number: string;
   customer_name: string;
   table_number: string;
+  subtotal: number;
+  discount_amount: number;
+  discount_percent: number;
   total: number;
   status: string;
   order_items?: OrderItem[];
@@ -46,6 +50,7 @@ export default function OrdersPage() {
   // Detail Modal State
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
 
   useEffect(() => {
     fetchOrders(1, activeFilter);
@@ -365,26 +370,34 @@ export default function OrdersPage() {
                   </div>
 
                   {/* Modal Action */}
-                  <div className="pt-4">
+                  <div className="pt-4 flex gap-3">
+                    <button
+                      onClick={() => setShowReceiptModal(true)}
+                      className="flex-1 py-4 border-2 border-[#6367FF] text-[#6367FF] rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-[#6367FF]/5 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Printer size={18} />
+                      Cetak Struk
+                    </button>
+                    
                     {selectedOrder.status === 'pending' ? (
                       <button
                         onClick={() => markAsPaid(selectedOrder.id)}
                         disabled={isUpdating === selectedOrder.id}
-                        className="w-full py-4 bg-green-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-green-500/30 hover:bg-green-600 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        className="flex-[1.5] py-4 bg-green-500 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg shadow-green-500/30 hover:bg-green-600 active:scale-95 transition-all flex items-center justify-center gap-2"
                       >
                         {isUpdating === selectedOrder.id ? (
                           <Loader2 className="animate-spin" size={18} />
                         ) : (
                           <>
                             <CheckCircle2 size={18} />
-                            Tandai Lunas & Selesaikan
+                            Tandai Lunas
                           </>
                         )}
                       </button>
                     ) : (
-                      <div className="w-full py-4 bg-gray-100 text-green-600 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2">
+                      <div className="flex-[1.5] py-4 bg-gray-100 text-green-600 rounded-2xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-2">
                         <CheckCircle2 size={18} />
-                        Pesanan ini telah lunas
+                        Lunas
                       </div>
                     )}
                   </div>
@@ -393,6 +406,39 @@ export default function OrdersPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Receipt Modal Integration - ISSUE 2 ADDON */}
+      {selectedOrder && (
+        <ReceiptModal
+          isOpen={showReceiptModal}
+          onClose={() => setShowReceiptModal(false)}
+          data={{
+            order_number: selectedOrder.order_number,
+            customer_name: selectedOrder.customer_name,
+            table_number: selectedOrder.table_number,
+            items: (selectedOrder.orderItems || selectedOrder.order_items || []).map(item => ({
+              name: item.menu.name,
+              quantity: item.quantity,
+              price: item.price,
+              type: (item as any).menu?.category?.type || 'food', // Fallback to food if missing
+              notes: item.notes
+            })),
+            subtotal: selectedOrder.subtotal,
+            discount: selectedOrder.discount_amount,
+            total: selectedOrder.total,
+            method: selectedOrder.payment_method?.toUpperCase() || 'CASH',
+            change: 0,
+            date: new Date(selectedOrder.created_at).toLocaleString('id-ID', { 
+              weekday: 'long', 
+              day: 'numeric', 
+              month: 'short', 
+              year: 'numeric', 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            }) + ' WIB'
+          }}
+        />
       )}
     </div>
   );

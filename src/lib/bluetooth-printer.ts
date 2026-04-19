@@ -8,6 +8,8 @@ export interface ReceiptData {
     price: number;
   }>;
   total: number;
+  subtotal?: number;
+  discount?: number;
   method: string;
   change: number;
   date: string;
@@ -151,6 +153,19 @@ export const printReceipt = async (data: ReceiptData) => {
   
   await send(encoder.encode(lineSeparator));
   
+  if (data.discount && data.discount > 0) {
+    const sLabel = "Subtotal: ";
+    const sVal = (data.subtotal || 0).toLocaleString('id-ID');
+    const sSpaces = width - sLabel.length - sVal.length;
+    await send(encoder.encode(`${sLabel}${' '.repeat(sSpaces > 0 ? sSpaces : 1)}${sVal}\n`));
+
+    const dLabel = "Disc SO 25%: ";
+    const dVal = `-Rp ${data.discount.toLocaleString('id-ID')}`;
+    const dSpaces = width - dLabel.length - dVal.length;
+    await send(encoder.encode(`${dLabel}${' '.repeat(dSpaces > 0 ? dSpaces : 1)}${dVal}\n`));
+    await send(encoder.encode(lineSeparator));
+  }
+
   await send(COMMANDS.BOLD_ON);
   const tLabel = "TOTAL: ";
   const tVal = `Rp ${data.total.toLocaleString('id-ID')}`;
