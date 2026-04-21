@@ -164,6 +164,7 @@ function RightPanel({
   setMemberInfo,
   onUpdateQuantity,
   onRemoveItem,
+  onUpdateNotes,
   isSoftOpening,
   setIsSoftOpening,
 }: {
@@ -181,6 +182,7 @@ function RightPanel({
   setMemberInfo: (info: any) => void;
   onUpdateQuantity: (index: number, delta: number) => void;
   onRemoveItem: (index: number) => void;
+  onUpdateNotes: (index: number, notes: string) => void;
   isSoftOpening: boolean;
   setIsSoftOpening: (val: boolean) => void;
 }) {
@@ -345,11 +347,13 @@ function RightPanel({
                       Rp {(item.price * item.quantity).toLocaleString('id-ID')}
                     </p>
                   </div>
-                  {item.notes && (
-                    <p className="text-[10px] text-amber-600 font-medium mt-1 truncate">
-                      "{item.notes}"
-                    </p>
-                  )}
+                  <input
+                    type="text"
+                    placeholder="Catatan..."
+                    value={item.notes || ''}
+                    onChange={(e) => onUpdateNotes(index, e.target.value)}
+                    className="w-full mt-1.5 px-2 py-1.5 text-[10px] border border-gray-100 bg-white rounded-lg focus:outline-none focus:border-[#6367FF] focus:bg-white transition-all placeholder:text-gray-300"
+                  />
                 </div>
               </div>
             ))
@@ -467,6 +471,12 @@ function AppContent() {
     newItems.splice(index, 1);
     setOrderItems(newItems);
   };
+
+  const updateOrderNotes = (index: number, notes: string) => {
+    const newItems = [...orderItems];
+    newItems[index] = { ...newItems[index], notes };
+    setOrderItems(newItems);
+  };
   
   // Payment Modal States
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -517,7 +527,7 @@ function AppContent() {
 
   const addToOrder = (item: any, notes: string) => {
     const existingItemIndex = orderItems.findIndex(
-      oi => oi.id === item.id && oi.notes === notes && oi.variant_id === (item.variant_id ?? null)
+      oi => oi.id === item.id && oi.variant_id === (item.variant_id ?? null)
     );
 
     if (existingItemIndex >= 0) {
@@ -666,6 +676,7 @@ function AppContent() {
           setMemberInfo={setMemberInfo}
           onUpdateQuantity={updateQuantity}
           onRemoveItem={removeFromOrder}
+          onUpdateNotes={updateOrderNotes}
           isSoftOpening={isSoftOpening}
           setIsSoftOpening={setIsSoftOpening}
         />

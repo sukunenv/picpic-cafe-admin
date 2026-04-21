@@ -27,7 +27,6 @@ interface KasirPageProps {
 
 export default function KasirPage({ onAddToOrder }: KasirPageProps) {
   const [activeCategory, setActiveCategory] = useState('all');
-  const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [loading, setLoading] = useState(true);
@@ -133,8 +132,7 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
     if (item.variants && item.variants.length > 0) {
       setVariantModal({ open: true, menu: item });
     } else {
-      onAddToOrder({ ...item, variant_id: null }, itemNotes[item.id] || '');
-      setItemNotes({ ...itemNotes, [item.id]: '' });
+      onAddToOrder({ ...item, variant_id: null }, '');
     }
   };
 
@@ -145,8 +143,7 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
         variant_id: variant.id,
         variant_name: variant.name,
         price: variant.price,
-      }, itemNotes[variantModal.menu.id] || '');
-      setItemNotes({ ...itemNotes, [variantModal.menu.id]: '' });
+      }, '');
     }
     setVariantModal({ open: false, menu: null });
   };
@@ -261,7 +258,7 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
                             variant_id: v.id,
                             variant_name: v.name,
                             price: v.price,
-                          }, itemNotes[item.id] || '');
+                          }, '');
                         }
                       }}
                       defaultValue=""
@@ -274,23 +271,14 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
                   </div>
                 )}
 
-                <div className="space-y-1.5">
-                  <input
-                    type="text"
-                    placeholder="Catatan..."
-                    value={itemNotes[item.id] || ''}
-                    onChange={(e) => setItemNotes({ ...itemNotes, [item.id]: e.target.value })}
-                    className="w-full px-2 py-1.5 text-[9px] border border-gray-50 bg-gray-50/50 rounded-lg focus:outline-none focus:border-[#6367FF] focus:bg-white transition-all"
-                  />
-                  {(!item.variants || item.variants.length === 0) && (
-                    <button
-                      onClick={() => handleAddToOrder(item)}
-                      className="w-full py-2 text-[11px] font-black bg-[#6367FF] text-white rounded-lg hover:bg-[#5558DD] active:scale-[0.98] transition-all"
-                    >
-                      TAMBAH
-                    </button>
-                  )}
-                </div>
+                {(!item.variants || item.variants.length === 0) && (
+                  <button
+                    onClick={() => handleAddToOrder(item)}
+                    className="w-full py-2 text-[11px] font-black bg-[#6367FF] text-white rounded-lg hover:bg-[#5558DD] active:scale-[0.98] transition-all"
+                  >
+                    TAMBAH
+                  </button>
+                )}
               </div>
             </div>
           </div>
