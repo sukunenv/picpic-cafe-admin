@@ -19,6 +19,12 @@ interface MenuItem {
   image: string;
   category: string;
   variants?: any[];
+  promo?: {
+    name: string;
+    type: 'percent' | 'fixed';
+    value: number;
+    discounted_price: number;
+  } | null;
 }
 
 interface KasirPageProps {
@@ -34,7 +40,7 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [variantModal, setVariantModal] = useState<{
     open: boolean;
-    menu: any | null;
+    menu: MenuItem | null;
   }>({ open: false, menu: null });
   const [categories, setCategories] = useState<Category[]>([
     { id: 'all', name: 'Semua', icon: LayoutGrid }
@@ -47,6 +53,15 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
       currency: 'IDR',
       minimumFractionDigits: 0
     }).format(price);
+  };
+
+  const getDiscountedPrice = (price: number, promo: MenuItem['promo']) => {
+    if (!promo) return price;
+    if (promo.type === 'percent') {
+      return price * (1 - promo.value / 100);
+    } else {
+      return Math.max(0, price - promo.value);
+    }
   };
 
   useEffect(() => {
@@ -70,7 +85,8 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
         category: item.category?.name || 'Lainnya',
         category_type: item.category?.type || 'food',
         is_available: item.is_available,
-        variants: item.variants || []
+        variants: item.variants || [],
+        promo: item.promo || null
       }));
 
       setMenuItems(mappedMenus);
@@ -132,17 +148,19 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
     if (item.variants && item.variants.length > 0) {
       setVariantModal({ open: true, menu: item });
     } else {
-      onAddToOrder({ ...item, variant_id: null }, '');
+      const finalPrice = getDiscountedPrice(item.price, item.promo);
+      onAddToOrder({ ...item, price: finalPrice, variant_id: null }, '');
     }
   };
 
   const handleSelectVariant = (variant: any) => {
     if (variantModal.menu) {
+      const finalPrice = getDiscountedPrice(variant.price, variantModal.menu.promo);
       onAddToOrder({
         ...variantModal.menu,
         variant_id: variant.id,
         variant_name: variant.name,
-        price: variant.price,
+        price: finalPrice,
       }, '');
     }
     setVariantModal({ open: false, menu: null });
@@ -231,19 +249,35 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
               <div className="mb-2">
                 <div className="flex items-start justify-between gap-1 mb-1">
                    <h3 className="font-bold text-[13px] text-gray-800 leading-tight">{item.name}</h3>
-                   <span className="text-[8px] font-black bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded uppercase flex-shrink-0">
-                      {item.category}
-                   </span>
+                   <div className="flex flex-col items-end gap-1">
+                      <span className="text-[8px] font-black bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded uppercase flex-shrink-0">
+                         {item.category}
+                      </span>
+                      {item.promo && (
+                        <span className="text-[8px] font-black bg-orange-500 text-white px-1.5 py-0.5 rounded uppercase flex-shrink-0 shadow-sm shadow-orange-500/20">
+                          {item.promo.name}
+                        </span>
+                      )}
+                   </div>
                 </div>
                 <p className="text-[9px] text-gray-400 line-clamp-1">{item.description}</p>
               </div>
               
               <div className="mt-auto">
-                <p className="font-black text-sm text-[#6367FF] mb-2">
-                  {item.variants && item.variants.length > 0 ? (
-                    formatPrice(Math.min(...item.variants.map(v => v.price)))
-                  ) : formatPrice(item.price)}
-                </p>
+                <div className="mb-2">
+                  {item.promo && (
+                    <p className="text-[10px] text-gray-400 line-through leading-none mb-1">
+                      {item.variants && item.variants.length > 0 ? (
+                        formatPrice(Math.min(...item.variants.map(v => v.price)))
+                      ) : formatPrice(item.price)}
+                    </p>
+                  )}
+                  <p className="font-black text-sm text-[#6367FF]">
+                    {item.variants && item.variants.length > 0 ? (
+                      formatPrice(getDiscountedPrice(Math.min(...item.variants.map(v => v.price)), item.promo))
+                    ) : formatPrice(getDiscountedPrice(item.price, item.promo))}
+                  </p>
+                </div>
 
                 {/* Variant dropdown for quick selection if multiple - ISSUE 6 */}
                 {item.variants && item.variants.length > 0 && (
@@ -253,11 +287,12 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
                       onChange={(e) => {
                         const v = item.variants?.find(v => v.id.toString() === e.target.value);
                         if (v) {
+                          const finalPrice = getDiscountedPrice(v.price, item.promo);
                           onAddToOrder({
                             ...item,
                             variant_id: v.id,
                             variant_name: v.name,
-                            price: v.price,
+                            price: finalPrice,
                           }, '');
                         }
                       }}
@@ -265,7 +300,9 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
                     >
                       <option value="" disabled>Pilih Varian...</option>
                       {item.variants.map(v => (
-                        <option key={v.id} value={v.id}>{v.name} - {formatPrice(v.price)}</option>
+                        <option key={v.id} value={v.id}>
+                          {v.name} - {formatPrice(getDiscountedPrice(v.price, item.promo))}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -347,9 +384,16 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
                     <span className="font-bold text-sm text-gray-700 group-hover:text-[#6367FF]">
                       {variant.name}
                     </span>
-                    <span className="font-black text-sm text-[#6367FF]">
-                      {formatPrice(variant.price)}
-                    </span>
+                    <div className="text-right">
+                      {variantModal.menu?.promo && (
+                        <p className="text-[10px] text-gray-400 line-through leading-none">
+                          {formatPrice(variant.price)}
+                        </p>
+                      )}
+                      <p className="font-black text-sm text-[#6367FF]">
+                        {formatPrice(getDiscountedPrice(variant.price, variantModal.menu?.promo))}
+                      </p>
+                    </div>
                   </button>
                 ))}
               </div>

@@ -6,10 +6,13 @@ export interface ReceiptData {
     name: string;
     quantity: number;
     price: number;
+    type?: string;
+    notes?: string;
   }>;
   total: number;
   subtotal?: number;
   discount?: number;
+  discount_name?: string;
   method: string;
   change: number;
   date: string;
@@ -159,7 +162,7 @@ export const printReceipt = async (data: ReceiptData) => {
     const sSpaces = width - sLabel.length - sVal.length;
     await send(encoder.encode(`${sLabel}${' '.repeat(sSpaces > 0 ? sSpaces : 1)}${sVal}\n`));
 
-    const dLabel = "Disc SO 25%: ";
+    const dLabel = `Disc ${data.discount_name || 'Promo'}: `;
     const dVal = `-Rp ${data.discount.toLocaleString('id-ID')}`;
     const dSpaces = width - dLabel.length - dVal.length;
     await send(encoder.encode(`${dLabel}${' '.repeat(dSpaces > 0 ? dSpaces : 1)}${dVal}\n`));

@@ -19,7 +19,8 @@ import {
   Layers,
   Users,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Tag
 } from 'lucide-react';
 import DashboardPage from './components/DashboardPage';
 import KasirPage from './components/KasirPage';
@@ -33,6 +34,7 @@ import LoginPage from './components/LoginPage';
 import ReceiptModal from './components/ReceiptModal';
 import MembersPage from './components/MembersPage';
 import MemberDetailPage from './components/MemberDetailPage';
+import PromoPage from './components/PromoPage';
 import AccessDenied from './components/AccessDenied';
 import { Navigate } from 'react-router';
 import api from '../lib/api';
@@ -71,6 +73,7 @@ function Sidebar({ isCollapsed, onToggle }: { isCollapsed: boolean; onToggle: ()
     { name: 'Members', icon: Users, path: '/members' },
     { name: 'Menu', icon: MenuIcon, path: '/menu' },
     { name: 'Kategori', icon: Layers, path: '/categories' },
+    { name: 'Promo', icon: Tag, path: '/promo' },
     { name: 'Banners', icon: ImageIcon, path: '/banners' },
     { name: 'Analytics', icon: BarChart3, path: '/analytics' },
     { name: 'Settings', icon: Settings, path: '/settings' },
@@ -165,8 +168,6 @@ function RightPanel({
   onUpdateQuantity,
   onRemoveItem,
   onUpdateNotes,
-  isSoftOpening,
-  setIsSoftOpening,
 }: {
   orderItems: OrderItem[];
   paymentMethod: 'Cash' | 'QRIS' | 'Transfer' | null;
@@ -183,12 +184,8 @@ function RightPanel({
   onUpdateQuantity: (index: number, delta: number) => void;
   onRemoveItem: (index: number) => void;
   onUpdateNotes: (index: number, notes: string) => void;
-  isSoftOpening: boolean;
-  setIsSoftOpening: (val: boolean) => void;
 }) {
-  const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const discountAmount = isSoftOpening ? Math.round(subtotal * 0.25) : 0;
-  const total = subtotal - discountAmount;
+  const total = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   const [scanInput, setScanInput] = useState('');
   const [isScanning, setIsScanning] = useState(false);
@@ -363,24 +360,6 @@ function RightPanel({
         {orderItems.length > 0 && (
           <>
             <div className="border-t border-gray-100 pt-4 mb-4 space-y-2">
-              <div className="flex justify-between text-xs font-bold text-gray-400">
-                <span className="uppercase">Subtotal</span>
-                <span>Rp {subtotal.toLocaleString('id-ID')}</span>
-              </div>
-
-              {/* TODO: REMOVE AFTER SOFT OPENING - ISSUE 8 */}
-              <div className="flex items-center justify-between py-1 px-3 bg-green-50 rounded-xl border border-green-100">
-                <div className="flex items-center gap-2">
-                   <div className={`w-8 h-4 rounded-full relative transition-colors ${isSoftOpening ? 'bg-green-500' : 'bg-gray-300'}`} onClick={() => setIsSoftOpening(!isSoftOpening)}>
-                      <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${isSoftOpening ? 'left-4.5' : 'left-0.5'}`} />
-                   </div>
-                   <span className="text-[10px] font-black text-green-700 uppercase">Disc Soft Opening 25%</span>
-                </div>
-                {isSoftOpening && (
-                   <span className="text-[10px] font-black text-green-600">-Rp {discountAmount.toLocaleString('id-ID')}</span>
-                )}
-              </div>
-
               <div className="flex justify-between items-center pt-2">
                 <span className="text-sm font-black text-gray-800 uppercase">Total Tagihan</span>
                 <span className="text-xl font-black text-[#6367FF]">Rp {total.toLocaleString('id-ID')}</span>
@@ -442,11 +421,6 @@ function AppContent() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     return localStorage.getItem('sidebar_collapsed') === 'true';
-  });
-
-  const [isSoftOpening, setIsSoftOpening] = useState(() => {
-    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
-    return today >= '2026-04-19' && today <= '2026-04-24';
   });
 
   const toggleSidebar = () => {
@@ -520,9 +494,7 @@ function AppContent() {
     }
   }, [location.pathname]);
 
-  const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const discountAmount = isSoftOpening ? Math.round(subtotal * 0.25) : 0;
-  const total = subtotal - discountAmount;
+  const total = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const changeAmount = cashAmount - total;
 
   const addToOrder = (item: any, notes: string) => {
@@ -570,7 +542,6 @@ function AppContent() {
         user_id: memberInfo?.id || null, // Link member ID for points!
         table_number: tableNumber,
         payment_method: paymentMethod?.toLowerCase(),
-        is_soft_opening: isSoftOpening,
         items: orderItems.map(item => ({
           menu_id: parseInt(item.id),
           variant_id: item.variant_id ?? null,
@@ -595,11 +566,12 @@ function AppContent() {
           type: item.category_type || 'food',
           notes: item.notes
         })),
-        subtotal: subtotal,
-        discount: discountAmount,
-        total: total,
+        subtotal: order.subtotal,
+        discount: order.discount_amount,
+        discount_name: order.discount_name,
+        total: order.total,
         method: paymentMethod || '',
-        change: paymentMethod === 'Cash' ? changeAmount : 0,
+        change: paymentMethod === 'Cash' ? (cashAmount - order.total) : 0,
         date: new Date().toLocaleString('id-ID', { 
           weekday: 'long', 
           day: 'numeric', 
@@ -654,6 +626,7 @@ function AppContent() {
           <Route path="/members/:id" element={<ProtectedRoute allowedRoles={['admin', 'owner']}><MemberDetailPage /></ProtectedRoute>} />
           <Route path="/menu" element={<MenuPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="/promo" element={<ProtectedRoute allowedRoles={['admin', 'owner']}><PromoPage /></ProtectedRoute>} />
           <Route path="/banners" element={<BannersPage />} />
           <Route path="/analytics" element={<ProtectedRoute allowedRoles={['admin', 'owner']}><AnalyticsPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute allowedRoles={['admin', 'owner', 'kasir']}><SettingsPage /></ProtectedRoute>} />
@@ -677,8 +650,6 @@ function AppContent() {
           onUpdateQuantity={updateQuantity}
           onRemoveItem={removeFromOrder}
           onUpdateNotes={updateOrderNotes}
-          isSoftOpening={isSoftOpening}
-          setIsSoftOpening={setIsSoftOpening}
         />
       )}
 

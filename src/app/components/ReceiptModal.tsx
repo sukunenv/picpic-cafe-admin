@@ -140,7 +140,7 @@ export default function ReceiptModal({ isOpen, onClose, data }: ReceiptModalProp
                       <span>{data.subtotal?.toLocaleString('id-ID')}</span>
                     </div>
                     <div className="flex justify-between text-[10px] text-green-600 italic">
-                      <span>Disc Soft Opening 25%</span>
+                      <span>Disc {data.discount_name || 'Promo'}</span>
                       <span>-Rp {data.discount.toLocaleString('id-ID')}</span>
                     </div>
                     <p className="text-gray-300 font-normal">--------------------------------</p>

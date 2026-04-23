@@ -22,6 +22,7 @@ interface Order {
   table_number: string;
   subtotal: number;
   discount_amount: number;
+  discount_name?: string | null;
   discount_percent: number;
   total: number;
   status: string;
@@ -425,7 +426,8 @@ export default function OrdersPage() {
               notes: item.notes
             })),
             subtotal: selectedOrder.subtotal,
-            discount: selectedOrder.discount_amount,
+            discount: selectedOrder.discount_amount ?? 0,
+            discount_name: selectedOrder.discount_name ?? null,
             total: selectedOrder.total,
             method: selectedOrder.payment_method?.toUpperCase() || 'CASH',
             change: 0,
