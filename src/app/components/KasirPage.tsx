@@ -21,7 +21,7 @@ interface MenuItem {
   variants?: any[];
   promo?: {
     name: string;
-    type: 'percent' | 'fixed';
+    type: string;
     value: number;
     discounted_price: number;
   } | null;
@@ -253,7 +253,7 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
                       <span className="text-[8px] font-black bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded uppercase flex-shrink-0">
                          {item.category}
                       </span>
-                      {item.promo && (
+                      {item.promo && item.promo.name && (
                         <span className="text-[8px] font-black bg-orange-500 text-white px-1.5 py-0.5 rounded uppercase flex-shrink-0 shadow-sm shadow-orange-500/20">
                           {item.promo.name}
                         </span>
@@ -265,7 +265,7 @@ export default function KasirPage({ onAddToOrder }: KasirPageProps) {
               
               <div className="mt-auto">
                 <div className="mb-2">
-                  {item.promo && (
+                  {item.promo && item.promo.name && (
                     <p className="text-[10px] text-gray-400 line-through leading-none mb-1">
                       {item.variants && item.variants.length > 0 ? (
                         formatPrice(Math.min(...item.variants.map(v => v.price)))
