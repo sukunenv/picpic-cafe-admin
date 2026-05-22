@@ -37,6 +37,15 @@ export interface PeakHourData {
   orders: number;
 }
 
+export interface Transaction {
+  id: number;
+  order_number: string;
+  customer_name: string;
+  total: number;
+  payment_method: string | null;
+  created_at: string;
+}
+
 export const analyticsService = {
   getDashboardLive: async () => {
     const response = await api.get('/analytics/dashboard-stats');
@@ -66,5 +75,10 @@ export const analyticsService = {
   getPeakHours: async (period: string = 'Today') => {
     const response = await api.get(`/analytics/peak-hours?period=${encodeURIComponent(period)}`);
     return response.data as PeakHourData[];
+  },
+
+  getTransactionHistory: async (period: string = 'Today') => {
+    const response = await api.get(`/analytics/transactions?period=${encodeURIComponent(period)}`);
+    return response.data as Transaction[];
   }
 };

@@ -7,7 +7,9 @@ import {
   ArrowUpRight, 
   Loader2, 
   Calendar,
-  DollarSign
+  DollarSign,
+  History,
+  Clock
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -30,7 +32,8 @@ import {
   ChartData, 
   TopMenu, 
   PaymentMethodData, 
-  PeakHourData 
+  PeakHourData,
+  Transaction
 } from '../../services/analyticsService';
 
 const COLORS = ['#6367FF', '#8494FF', '#A5B1FF', '#C6CEFF', '#E7EBFF'];
@@ -40,7 +43,8 @@ const Skeleton = ({ className }: { className: string }) => (
 );
 
 export default function AnalyticsPage() {
-  const [activeTab, setActiveTab] = useState('This Week');
+  const [activePeriod, setActivePeriod] = useState('This Week');
+  const [viewTab, setViewTab] = useState('Ringkasan');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<{
     summary: AnalyticsSummary | null;
@@ -48,30 +52,36 @@ export default function AnalyticsPage() {
     topMenus: TopMenu[];
     payments: PaymentMethodData[];
     peakHours: PeakHourData[];
+    transactions: Transaction[];
   }>({
     summary: null,
     chart: [],
     topMenus: [],
     payments: [],
-    peakHours: []
+    peakHours: [],
+    transactions: []
   });
 
   useEffect(() => {
     fetchData();
-  }, [activeTab]);
+  }, [activePeriod, viewTab]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [summary, chart, topMenus, payments, peakHours] = await Promise.all([
-        analyticsService.getSummary(activeTab),
-        analyticsService.getChartData(activeTab),
-        analyticsService.getTopMenus(activeTab),
-        analyticsService.getPaymentMethods(activeTab),
-        analyticsService.getPeakHours(activeTab)
-      ]);
-      
-      setData({ summary, chart, topMenus, payments, peakHours });
+      if (viewTab === 'Ringkasan') {
+        const [summary, chart, topMenus, payments, peakHours] = await Promise.all([
+          analyticsService.getSummary(activePeriod),
+          analyticsService.getChartData(activePeriod),
+          analyticsService.getTopMenus(activePeriod),
+          analyticsService.getPaymentMethods(activePeriod),
+          analyticsService.getPeakHours(activePeriod)
+        ]);
+        setData(prev => ({ ...prev, summary, chart, topMenus, payments, peakHours }));
+      } else {
+        const transactions = await analyticsService.getTransactionHistory(activePeriod);
+        setData(prev => ({ ...prev, transactions }));
+      }
     } catch (err) {
       console.error('Failed to fetch analytics data:', err);
     } finally {
@@ -87,10 +97,29 @@ export default function AnalyticsPage() {
     }).format(value);
   };
 
+  const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr.replace(' ', 'T'));
+    return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const groupedTransactions = data.transactions.reduce((acc, curr) => {
+    // extract date part safely YYYY-MM-DD
+    const datePart = curr.created_at.split(' ')[0];
+    const d = new Date(datePart);
+    const dateLabel = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    
+    if (!acc[dateLabel]) {
+      acc[dateLabel] = { total: 0, items: [] };
+    }
+    acc[dateLabel].total += Number(curr.total);
+    acc[dateLabel].items.push(curr);
+    return acc;
+  }, {} as Record<string, { total: number, items: Transaction[] }>);
+
   return (
     <div className="p-6 font-['Plus_Jakarta_Sans',_sans-serif]">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-black text-gray-800 tracking-tight uppercase">Analytics Dashboard</h1>
           <p className="text-sm text-gray-500 font-medium">Laporan performa bisnis Picpic Cafe</p>
@@ -98,12 +127,12 @@ export default function AnalyticsPage() {
         
         {/* Period Filter Tabs */}
         <div className="bg-white p-1 rounded-2xl shadow-sm border border-gray-100 flex self-start">
-          {['Today', 'This Week', 'This Month'].map((tab) => (
+          {(viewTab === 'Riwayat Transaksi' ? ['Semua', 'Today', 'This Week', 'This Month'] : ['Today', 'This Week', 'This Month']).map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => setActivePeriod(tab)}
               className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                activeTab === tab 
+                activePeriod === tab 
                   ? 'bg-[#6367FF] text-white shadow-lg shadow-[#6367FF]/20' 
                   : 'text-gray-400 hover:text-gray-600'
               }`}
@@ -114,6 +143,37 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
+      {/* View Tabs */}
+      <div className="flex border-b border-gray-200 mb-8">
+        <button
+          onClick={() => {
+            setViewTab('Ringkasan');
+            if (activePeriod === 'Semua') setActivePeriod('This Week');
+          }}
+          className={`flex items-center gap-2 px-6 py-4 border-b-2 font-bold transition-all ${
+            viewTab === 'Ringkasan'
+              ? 'border-[#6367FF] text-[#6367FF]'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <TrendingUp size={18} />
+          Ringkasan
+        </button>
+        <button
+          onClick={() => setViewTab('Riwayat Transaksi')}
+          className={`flex items-center gap-2 px-6 py-4 border-b-2 font-bold transition-all ${
+            viewTab === 'Riwayat Transaksi'
+              ? 'border-[#6367FF] text-[#6367FF]'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <History size={18} />
+          Riwayat Transaksi
+        </button>
+      </div>
+
+      {viewTab === 'Ringkasan' ? (
+        <>
       {/* SECTION 1: Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {loading ? (
@@ -131,7 +191,7 @@ export default function AnalyticsPage() {
               <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-4">
                 <TrendingUp size={24} />
               </div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pendapatan {activeTab === 'Today' ? 'Hari Ini' : activeTab === 'This Week' ? 'Mingguan' : 'Bulanan'}</p>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pendapatan {activePeriod === 'Today' ? 'Hari Ini' : activePeriod === 'This Week' ? 'Mingguan' : 'Bulanan'}</p>
               <h3 className="text-2xl font-black text-gray-800">{formatIDR(data.summary?.period_revenue || 0)}</h3>
               <div className="flex items-center gap-1 mt-2 text-green-500 font-bold text-xs">
                 <ArrowUpRight size={14} />
@@ -146,7 +206,7 @@ export default function AnalyticsPage() {
               <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
                 <ShoppingBag size={24} />
               </div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pesanan {activeTab === 'Today' ? 'Hari Ini' : activeTab === 'This Week' ? 'Mingguan' : 'Bulanan'}</p>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pesanan {activePeriod === 'Today' ? 'Hari Ini' : activePeriod === 'This Week' ? 'Mingguan' : 'Bulanan'}</p>
               <h3 className="text-2xl font-black text-gray-800">{data.summary?.period_orders || 0} Order</h3>
               <p className="text-xs text-gray-400 font-medium mt-2">Dipesan pada periode ini</p>
             </div>
@@ -172,7 +232,7 @@ export default function AnalyticsPage() {
           <div>
             <h3 className="text-lg font-black text-gray-800 uppercase tracking-tight">Tren Pendapatan</h3>
             <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
-              {activeTab === 'Today' ? 'Pergerakan Jam' : activeTab === 'This Week' ? '7 Hari Terakhir' : 'Bulan Ini'}
+              {activePeriod === 'Today' ? 'Pergerakan Jam' : activePeriod === 'This Week' ? '7 Hari Terakhir' : 'Bulan Ini'}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -312,6 +372,74 @@ export default function AnalyticsPage() {
           )}
         </div>
       </div>
+      </>
+      ) : (
+        <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 min-h-[500px]">
+          <h3 className="text-lg font-black text-gray-800 uppercase tracking-tight mb-8">Riwayat Transaksi</h3>
+          
+          {loading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-12" />
+              <Skeleton className="h-20" />
+              <Skeleton className="h-20" />
+            </div>
+          ) : data.transactions.length === 0 ? (
+            <div className="text-center py-16 flex flex-col items-center">
+              <History size={48} className="text-gray-200 mb-4" />
+              <p className="text-gray-500 font-bold">Tidak ada transaksi di periode ini</p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {Object.entries(groupedTransactions).map(([date, group]) => (
+                <div key={date}>
+                  {/* Group Header */}
+                  <div className="flex justify-between items-center bg-gray-50 px-4 py-3 rounded-2xl mb-4">
+                    <span className="font-bold text-gray-700 text-sm flex items-center gap-2">
+                      <Calendar size={16} className="text-[#6367FF]" />
+                      {date}
+                    </span>
+                    <span className="font-black text-[#6367FF] text-sm">
+                      {formatIDR(group.total)}
+                    </span>
+                  </div>
+                  
+                  {/* Transaction List */}
+                  <div className="space-y-3">
+                    {group.items.map((trx) => (
+                      <div key={trx.id} className="flex items-center justify-between px-4 py-3 border border-gray-100 rounded-2xl hover:border-gray-200 transition-colors">
+                        <div className="flex items-center gap-4">
+                          <div className="text-gray-400 flex items-center gap-1.5 text-xs font-bold w-20">
+                            <Clock size={14} />
+                            {formatTime(trx.created_at)}
+                          </div>
+                          <div>
+                            <p className="font-bold text-gray-800 text-sm">{trx.customer_name || 'Pelanggan'}</p>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{trx.order_number}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-6">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                            trx.payment_method === 'cash' ? 'bg-gray-100 text-gray-500' :
+                            trx.payment_method === 'transfer' ? 'bg-blue-50 text-blue-500' :
+                            trx.payment_method === 'qris' ? 'bg-green-50 text-green-500' :
+                            'bg-gray-100 text-gray-500'
+                          }`}>
+                            {trx.payment_method || 'Unknown'}
+                          </span>
+                          <span className="font-black text-gray-800 min-w-[100px] text-right">
+                            {formatIDR(trx.total)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
