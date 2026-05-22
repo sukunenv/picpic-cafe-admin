@@ -80,5 +80,21 @@ export const analyticsService = {
   getTransactionHistory: async (period: string = 'Today') => {
     const response = await api.get(`/analytics/transactions?period=${encodeURIComponent(period)}`);
     return response.data as Transaction[];
+  },
+
+  exportReport: async (period: string = 'Today', type: 'pdf' | 'excel' = 'pdf') => {
+    const endpoint = type === 'pdf' ? '/analytics/export/daily' : '/analytics/export/monthly';
+    const baseUrl = import.meta.env.VITE_API_URL || '';
+    const token = localStorage.getItem('picpic_auth_token');
+    
+    let urlString = `${baseUrl}${endpoint}?period=${encodeURIComponent(period)}`;
+    if (token) {
+      urlString += `&token=${encodeURIComponent(token)}`;
+    }
+
+    window.open(urlString, '_blank');
+    
+    // Memberikan jeda simulasi loading karena window.open bersifat synchronous
+    return new Promise(resolve => setTimeout(resolve, 1500));
   }
 };

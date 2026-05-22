@@ -9,7 +9,9 @@ import {
   Calendar,
   DollarSign,
   History,
-  Clock
+  Clock,
+  FileText,
+  FileSpreadsheet
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -46,6 +48,7 @@ export default function AnalyticsPage() {
   const [activePeriod, setActivePeriod] = useState('This Week');
   const [viewTab, setViewTab] = useState('Ringkasan');
   const [loading, setLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [data, setData] = useState<{
     summary: AnalyticsSummary | null;
     chart: ChartData[];
@@ -86,6 +89,18 @@ export default function AnalyticsPage() {
       console.error('Failed to fetch analytics data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExport = async (type: 'pdf' | 'excel') => {
+    try {
+      setIsExporting(true);
+      await analyticsService.exportReport(activePeriod, type);
+    } catch (err) {
+      console.error('Failed to export:', err);
+      alert('Gagal mengekspor laporan');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -375,7 +390,27 @@ export default function AnalyticsPage() {
       </>
       ) : (
         <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 min-h-[500px]">
-          <h3 className="text-lg font-black text-gray-800 uppercase tracking-tight mb-8">Riwayat Transaksi</h3>
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-lg font-black text-gray-800 uppercase tracking-tight">Riwayat Transaksi</h3>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => handleExport('pdf')}
+                disabled={isExporting || data.transactions.length === 0}
+                className="flex items-center gap-2 px-4 py-2 border border-[#766CA9] text-[#766CA9] rounded-xl font-bold text-xs hover:bg-[#766CA9] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FileText size={16} />
+                {isExporting ? 'Mengunduh...' : 'Export PDF Harian'}
+              </button>
+              <button 
+                onClick={() => handleExport('excel')}
+                disabled={isExporting || data.transactions.length === 0}
+                className="flex items-center gap-2 px-4 py-2 border border-[#766CA9] text-[#766CA9] rounded-xl font-bold text-xs hover:bg-[#766CA9] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FileSpreadsheet size={16} />
+                {isExporting ? 'Mengunduh...' : 'Export Excel Bulanan'}
+              </button>
+            </div>
+          </div>
           
           {loading ? (
             <div className="space-y-4">
