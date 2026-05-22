@@ -401,9 +401,11 @@ export default function AnalyticsPage() {
                 <FileText size={16} />
                 {isExporting ? 'Mengunduh...' : 'Export PDF Harian'}
               </button>
+              {/* Excel export temporarily disabled */}
               <button 
                 onClick={() => handleExport('excel')}
                 disabled={isExporting || data.transactions.length === 0}
+                style={{ display: 'none' }}
                 className="flex items-center gap-2 px-4 py-2 border border-[#766CA9] text-[#766CA9] rounded-xl font-bold text-xs hover:bg-[#766CA9] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FileSpreadsheet size={16} />
