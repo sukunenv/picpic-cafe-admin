@@ -112,16 +112,18 @@ export default function AnalyticsPage() {
     }).format(value);
   };
 
+  const toWIB = (dateStr: string): Date => {
+    const d = new Date(dateStr.replace(' ', 'T') + 'Z'); // 'Z' = UTC
+    return new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  };
+
   const formatTime = (dateStr: string) => {
-    const d = new Date(dateStr.replace(' ', 'T'));
-    return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    return toWIB(dateStr).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   };
 
   const groupedTransactions = data.transactions.reduce((acc, curr) => {
-    // extract date part safely YYYY-MM-DD
-    const datePart = curr.created_at.split(' ')[0];
-    const d = new Date(datePart);
-    const dateLabel = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const wibDate = toWIB(curr.created_at);
+    const dateLabel = wibDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     
     if (!acc[dateLabel]) {
       acc[dateLabel] = { total: 0, items: [] };
