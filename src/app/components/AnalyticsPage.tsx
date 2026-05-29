@@ -113,8 +113,17 @@ export default function AnalyticsPage() {
   };
 
   const toWIB = (dateStr: string): Date => {
-    const d = new Date(dateStr.replace(' ', 'T') + 'Z'); // 'Z' = UTC
-    return new Date(d.getTime() + 7 * 60 * 60 * 1000);
+    if (!dateStr) return new Date();
+    // Coba parse langsung dulu
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      // Kalau valid, cek apakah sudah ada timezone info
+      const hasTimezone = dateStr.includes('Z') || dateStr.includes('+') || dateStr.includes('-', 10);
+      if (hasTimezone) return new Date(d.getTime() + 7 * 60 * 60 * 1000);
+      // Kalau tidak ada timezone, anggap UTC
+      return new Date(dateStr.replace(' ', 'T') + 'Z');
+    }
+    return new Date();
   };
 
   const formatTime = (dateStr: string) => {
@@ -132,6 +141,8 @@ export default function AnalyticsPage() {
     acc[dateLabel].items.push(curr);
     return acc;
   }, {} as Record<string, { total: number, items: Transaction[] }>);
+
+  console.log('raw created_at:', data.transactions[0]?.created_at);
 
   return (
     <div className="p-6 font-['Plus_Jakarta_Sans',_sans-serif]">
