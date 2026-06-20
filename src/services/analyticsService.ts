@@ -46,6 +46,15 @@ export interface Transaction {
   created_at: string;
 }
 
+export interface MonthlyRevenueData {
+  month: string;
+  total: number;
+  cash: number;
+  qris: number;
+  transfer: number;
+  orders: number;
+}
+
 export const analyticsService = {
   getDashboardLive: async () => {
     const response = await api.get('/analytics/dashboard-stats');
@@ -80,6 +89,11 @@ export const analyticsService = {
   getTransactionHistory: async (period: string = 'Today') => {
     const response = await api.get(`/analytics/transactions?period=${encodeURIComponent(period)}`);
     return response.data as Transaction[];
+  },
+
+  getMonthlyRevenue: async () => {
+    const response = await api.get('/analytics/monthly-revenue');
+    return response.data as MonthlyRevenueData[];
   },
 
   exportReport: async (period: string = 'Today', type: 'pdf' | 'excel' = 'pdf') => {

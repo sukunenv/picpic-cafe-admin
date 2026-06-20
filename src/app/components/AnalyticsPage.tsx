@@ -35,7 +35,8 @@ import {
   TopMenu, 
   PaymentMethodData, 
   PeakHourData,
-  Transaction
+  Transaction,
+  MonthlyRevenueData
 } from '../../services/analyticsService';
 
 const COLORS = ['#6367FF', '#8494FF', '#A5B1FF', '#C6CEFF', '#E7EBFF'];
@@ -56,13 +57,15 @@ export default function AnalyticsPage() {
     payments: PaymentMethodData[];
     peakHours: PeakHourData[];
     transactions: Transaction[];
+    monthlyRevenue: MonthlyRevenueData[];
   }>({
     summary: null,
     chart: [],
     topMenus: [],
     payments: [],
     peakHours: [],
-    transactions: []
+    transactions: [],
+    monthlyRevenue: []
   });
 
   useEffect(() => {
@@ -81,9 +84,12 @@ export default function AnalyticsPage() {
           analyticsService.getPeakHours(activePeriod)
         ]);
         setData(prev => ({ ...prev, summary, chart, topMenus, payments, peakHours }));
-      } else {
+      } else if (viewTab === 'Riwayat Transaksi') {
         const transactions = await analyticsService.getTransactionHistory(activePeriod);
         setData(prev => ({ ...prev, transactions }));
+      } else if (viewTab === 'Pendapatan Bulanan') {
+        const monthlyRevenue = await analyticsService.getMonthlyRevenue();
+        setData(prev => ({ ...prev, monthlyRevenue }));
       }
     } catch (err) {
       console.error('Failed to fetch analytics data:', err);
@@ -144,8 +150,11 @@ export default function AnalyticsPage() {
           <p className="text-sm text-gray-500 font-medium">Laporan performa bisnis Picpic Cafe</p>
         </div>
         
-        {/* Period Filter Tabs */}
-        <div className="bg-white p-1 rounded-2xl shadow-sm border border-gray-100 flex self-start">
+        {/* Period Filter Tabs — disembunyikan saat tab Pendapatan Bulanan aktif */}
+        <div
+          className="bg-white p-1 rounded-2xl shadow-sm border border-gray-100 flex self-start"
+          style={{ visibility: viewTab === 'Pendapatan Bulanan' ? 'hidden' : 'visible' }}
+        >
           {(viewTab === 'Riwayat Transaksi' ? ['Semua', 'Today', 'This Week', 'This Month'] : ['Today', 'This Week', 'This Month']).map((tab) => (
             <button
               key={tab}
@@ -188,6 +197,17 @@ export default function AnalyticsPage() {
         >
           <History size={18} />
           Riwayat Transaksi
+        </button>
+        <button
+          onClick={() => setViewTab('Pendapatan Bulanan')}
+          className={`flex items-center gap-2 px-6 py-4 border-b-2 font-bold transition-all ${
+            viewTab === 'Pendapatan Bulanan'
+              ? 'border-[#6367FF] text-[#6367FF]'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Calendar size={18} />
+          Pendapatan Bulanan
         </button>
       </div>
 
@@ -392,7 +412,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
       </>
-      ) : (
+      ) : viewTab === 'Riwayat Transaksi' ? (
         <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 min-h-[500px]">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-lg font-black text-gray-800 uppercase tracking-tight">Riwayat Transaksi</h3>
@@ -479,6 +499,109 @@ export default function AnalyticsPage() {
               ))}
             </div>
           )}
+        </div>
+      ) : (
+        /* ============================================================ */
+        /* TAB: PENDAPATAN BULANAN                                       */
+        /* ============================================================ */
+        <div className="space-y-8">
+          {/* BAGIAN 1 — Bar Chart */}
+          <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+            <div className="mb-8">
+              <h3 className="text-lg font-black text-gray-800 uppercase tracking-tight">Tren Pendapatan Bulanan</h3>
+              <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">6 Bulan Terakhir — Breakdown per Metode Pembayaran</p>
+            </div>
+            <div className="h-[320px] w-full">
+              {loading ? <Skeleton className="w-full h-full" /> : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.monthlyRevenue} barCategoryGap="30%">
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F1F1" />
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fontWeight: 700, fill: '#9CA3AF' }}
+                      dy={10}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fontWeight: 700, fill: '#9CA3AF' }}
+                      tickFormatter={(val) => `Rp${(val / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      formatter={(value: number) => [formatIDR(value)]}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      height={36}
+                      iconType="circle"
+                      formatter={(val) => <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{val}</span>}
+                    />
+                    <Bar dataKey="cash" name="Cash" fill="#22C55E" radius={[4, 4, 0, 0]} barSize={16} />
+                    <Bar dataKey="qris" name="QRIS" fill="#6367FF" radius={[4, 4, 0, 0]} barSize={16} />
+                    <Bar dataKey="transfer" name="Transfer" fill="#F59E0B" radius={[4, 4, 0, 0]} barSize={16} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          {/* BAGIAN 2 — Tabel Ringkasan */}
+          <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+            <h3 className="text-lg font-black text-gray-800 uppercase tracking-tight mb-8">Ringkasan per Bulan</h3>
+            {loading ? (
+              <div className="space-y-4">
+                {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-12" />)}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 rounded-2xl">
+                      <th className="text-left px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest rounded-l-2xl">Bulan</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cash</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">QRIS</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Transfer</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Total</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest rounded-r-2xl">Jumlah Order</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {data.monthlyRevenue.map((row) => (
+                      <tr key={row.month} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-4 py-3 font-bold text-gray-700">{row.month}</td>
+                        <td className="px-4 py-3 text-right font-medium text-gray-600">{formatIDR(row.cash)}</td>
+                        <td className="px-4 py-3 text-right font-medium text-gray-600">{formatIDR(row.qris)}</td>
+                        <td className="px-4 py-3 text-right font-medium text-gray-600">{formatIDR(row.transfer)}</td>
+                        <td className="px-4 py-3 text-right font-black text-gray-800">{formatIDR(row.total)}</td>
+                        <td className="px-4 py-3 text-right font-bold text-[#6367FF]">{row.orders} order</td>
+                      </tr>
+                    ))}
+                    {/* Baris TOTAL */}
+                    {data.monthlyRevenue.length > 0 && (() => {
+                      const totalCash     = data.monthlyRevenue.reduce((s, r) => s + r.cash, 0);
+                      const totalQris     = data.monthlyRevenue.reduce((s, r) => s + r.qris, 0);
+                      const totalTransfer = data.monthlyRevenue.reduce((s, r) => s + r.transfer, 0);
+                      const totalAll      = data.monthlyRevenue.reduce((s, r) => s + r.total, 0);
+                      const totalOrders   = data.monthlyRevenue.reduce((s, r) => s + r.orders, 0);
+                      return (
+                        <tr className="bg-[#6367FF]/5 border-t-2 border-[#6367FF]/20">
+                          <td className="px-4 py-3 font-black text-[#6367FF] uppercase tracking-widest text-[10px]">Total</td>
+                          <td className="px-4 py-3 text-right font-black text-gray-800">{formatIDR(totalCash)}</td>
+                          <td className="px-4 py-3 text-right font-black text-gray-800">{formatIDR(totalQris)}</td>
+                          <td className="px-4 py-3 text-right font-black text-gray-800">{formatIDR(totalTransfer)}</td>
+                          <td className="px-4 py-3 text-right font-black text-[#6367FF] text-base">{formatIDR(totalAll)}</td>
+                          <td className="px-4 py-3 text-right font-black text-gray-800">{totalOrders} order</td>
+                        </tr>
+                      );
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
